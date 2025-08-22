@@ -1,18 +1,18 @@
+import type { RsbuildPlugin } from '@rsbuild/core';
+import type { UserConfig } from '@unocss/core';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import { posix, resolve } from 'node:path';
-import type { RsbuildPlugin } from '@rsbuild/core';
-import type { UserConfig } from '@unocss/core';
 import { createContext } from './integrationUtil/context.js';
 import { resolveId } from './integrationUtil/layers.js';
 import { applyTransformers } from './integrationUtil/transformers.js';
 
-export type PluginExampleOptions = {
+export type PluginUnoCssOptions = {
   config?: UserConfig<any> | string;
 };
 
-export const pluginExample = (
-  options: PluginExampleOptions = {},
+export const pluginUnoCss = (
+  options: PluginUnoCssOptions = {},
 ): RsbuildPlugin => ({
   name: 'plugin-example',
 
