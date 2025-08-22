@@ -1,7 +1,9 @@
 {
-  "name": "rsbuild-plugin-example",
+  "name": "@a-type/rsbuild-plugin-unocss",
   "version": "0.0.1-beta.1",
-  "repository": "https://github.com/rspack-contrib/rsbuild-plugin-template",
+  "repository": {
+    "url": "https://github.com/a-type/rsbuild-plugin-unocss"
+  },
   "license": "MIT",
   "type": "module",
   "exports": {
