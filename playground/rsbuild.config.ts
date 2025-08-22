@@ -1,6 +1,6 @@
 import { defineConfig } from '@rsbuild/core';
-import { pluginExample } from '../src';
 import { presetMini, transformerVariantGroup } from 'unocss';
+import { pluginExample } from '../src';
 
 export default defineConfig({
   plugins: [

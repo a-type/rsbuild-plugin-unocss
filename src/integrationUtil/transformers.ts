@@ -1,9 +1,9 @@
 import type { EncodedSourceMap } from '@jridgewell/remapping';
+import remapping from '@jridgewell/remapping';
 import type {
   SourceCodeTransformerEnforce,
   UnocssPluginContext,
 } from '@unocss/core';
-import remapping from '@jridgewell/remapping';
 import MagicString from 'magic-string';
 import { IGNORE_COMMENT, SKIP_COMMENT_RE } from './constants.js';
 import { restoreSkipCode, transformSkipCode } from './utils.js';

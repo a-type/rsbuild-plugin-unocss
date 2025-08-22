@@ -1,12 +1,12 @@
+import process from 'node:process';
 import type { LoadConfigResult, LoadConfigSource } from '@unocss/config';
+import { createRecoveryConfigLoader } from '@unocss/config';
 import type {
   UnocssPluginContext,
   UnoGenerator,
   UserConfig,
   UserConfigDefaults,
 } from '@unocss/core';
-import process from 'node:process';
-import { createRecoveryConfigLoader } from '@unocss/config';
 import { BetterMap, createGenerator } from '@unocss/core';
 import { createFilter } from 'unplugin-utils';
 import {

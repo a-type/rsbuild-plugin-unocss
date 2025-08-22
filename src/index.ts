@@ -1,8 +1,8 @@
-import type { RsbuildPlugin } from '@rsbuild/core';
-import type { UserConfig } from '@unocss/core';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import { posix, resolve } from 'node:path';
+import type { RsbuildPlugin } from '@rsbuild/core';
+import type { UserConfig } from '@unocss/core';
 import { createContext } from './integrationUtil/context.js';
 import { resolveId } from './integrationUtil/layers.js';
 import { applyTransformers } from './integrationUtil/transformers.js';
@@ -37,7 +37,6 @@ export const pluginExample = (
       });
     });
 
-
     // apply transforms to incoming TS files
     // and trigger extraction on them as we
     // receive them.
@@ -48,7 +47,7 @@ export const pluginExample = (
       },
       async ({ code, resource, emitFile, addDependency }) => {
         addDependency(virtualModulesDir + resolveId('uno.css'));
-        addDependency('uno.css')
+        addDependency('uno.css');
 
         console.log('Transforming source', resource);
         let final = code;
@@ -61,7 +60,10 @@ export const pluginExample = (
         await ctx.extract(final, resource);
         const cssResult = await ctx.uno.generate(ctx.tokens, { minify: false });
         console.log('Generated CSS:', cssResult.css);
-        await fs.writeFile(virtualModulesDir + resolveId('uno.css'), cssResult.css);
+        await fs.writeFile(
+          virtualModulesDir + resolveId('uno.css'),
+          cssResult.css,
+        );
         emitFile(virtualModulesDir + resolveId('uno.css'), cssResult.css);
 
         return final;
@@ -106,7 +108,13 @@ export const pluginExample = (
       if (queryIndex >= 0) {
         query = resolveData.request.slice(queryIndex);
       }
-      const rewritten = posix.join(virtualModulesDir, entry + query);
+      const parsedQuery = new URLSearchParams(query);
+      // add token count to query to break cache when new tokens are added
+      parsedQuery.append('tokens', ctx.tokens.size.toString());
+      const rewritten = posix.join(
+        virtualModulesDir,
+        entry + '?' + parsedQuery.toString(),
+      );
       console.log('Rewriting resolution for UnoCSS:', rewritten);
       resolveData.request = rewritten;
     });
