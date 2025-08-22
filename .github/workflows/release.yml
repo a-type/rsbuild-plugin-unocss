@@ -43,6 +43,7 @@ jobs:
         uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.NPM_TOKEN }}
+          access: public
 
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
