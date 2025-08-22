@@ -5,5 +5,8 @@
   "scripts": {
     "dev": "npx rsbuild dev",
     "build": "npx rsbuild build"
+  },
+  "dependencies": {
+    "change-case": "5.4.4"
   }
 }
