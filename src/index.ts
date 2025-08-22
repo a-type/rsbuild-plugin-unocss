@@ -17,9 +17,15 @@ export const pluginExample = (
   name: 'plugin-example',
 
   setup(api) {
-    console.log('Loading UnoCSS Plugin...');
     // load plugin context
+    let invalidated = false;
     const ctx = createContext(options.config);
+    ctx.onInvalidate(() => {
+      invalidated = true;
+    });
+    function resetInvalidated() {
+      invalidated = false;
+    }
 
     const virtualModulesDir = resolve(
       api.getRsbuildConfig()?.root ?? process.cwd(),
@@ -45,53 +51,30 @@ export const pluginExample = (
         // TODO: build filter from pipeline rules
         test: /\.tsx?$/,
       },
-      async ({ code, resource, emitFile, addDependency }) => {
-        addDependency(virtualModulesDir + resolveId('uno.css'));
-        addDependency('uno.css');
-
-        console.log('Transforming source', resource);
+      async ({ code, resource, emitFile }) => {
+        api.logger.debug('Transforming source', resource);
         let final = code;
         const result = await applyTransformers(ctx, code, resource, 'pre');
         if (result) {
-          console.log('Transformed', result.code);
           final = result.code;
         }
 
         await ctx.extract(final, resource);
-        const cssResult = await ctx.uno.generate(ctx.tokens, { minify: false });
-        console.log('Generated CSS:', cssResult.css);
-        await fs.writeFile(
-          virtualModulesDir + resolveId('uno.css'),
-          cssResult.css,
-        );
-        emitFile(virtualModulesDir + resolveId('uno.css'), cssResult.css);
-
+        if (invalidated) {
+          resetInvalidated();
+          const cssResult = await ctx.uno.generate(ctx.tokens, {
+            minify: false,
+          });
+          api.logger.info('🔄️ Regenerated CSS');
+          await fs.writeFile(
+            virtualModulesDir + resolveId('uno.css'),
+            cssResult.css,
+          );
+          emitFile(virtualModulesDir + resolveId('uno.css'), cssResult.css);
+        }
         return final;
       },
     );
-
-    // add our virtual "uno.css" module as an asset.
-    // this asset is just a placeholder for now.
-    // api.processAssets(
-    //   {
-    //     stage: 'additional',
-    //   },
-    //   async ({ assets, sources, compilation }) => {
-    //     Object.keys(assets).forEach((assetName) => {
-    //       console.log('asset', assetName);
-    //     });
-    //     const mainId = resolveId('uno.css');
-    //     if (mainId) {
-    //       const virtualId = posix.join(virtualModulesDir, mainId);
-    //       console.log('Emitting asset for UnoCSS:', virtualId);
-    //       await ctx.flushTasks();
-    //       const result = await ctx.uno.generate(ctx.tokens, { minify: false });
-    //       const source = new sources.RawSource(result.css);
-    //       console.log('Generated CSS:', result.css);
-    //       writeFileSync(virtualId, result.css);
-    //     }
-    //   },
-    // );
 
     // match and map `import 'uno.css';` to our
     // virtual module location in node_modules/.virtual
@@ -115,7 +98,7 @@ export const pluginExample = (
         virtualModulesDir,
         entry + '?' + parsedQuery.toString(),
       );
-      console.log('Rewriting resolution for UnoCSS:', rewritten);
+      api.logger.info('Rewriting resolution for UnoCSS:', rewritten);
       resolveData.request = rewritten;
     });
   },
