@@ -99,6 +99,7 @@ export const pluginUnoCss = (
 ${result.css}`;
       },
     },
+    tempDir: virtualModulesDir,
   });
 
   return [unoVirtualModulesPlugin, unoPlugin];
