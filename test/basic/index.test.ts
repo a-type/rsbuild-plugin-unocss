@@ -1,7 +1,7 @@
-import { expect, test } from '@playwright/test';
-import { createRsbuild } from '@rsbuild/core';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { expect, test } from '@playwright/test';
+import { createRsbuild } from '@rsbuild/core';
 import { pluginUnoCss } from '../../src';
 import { getRandomPort } from '../helper';
 
