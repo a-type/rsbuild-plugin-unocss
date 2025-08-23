@@ -1,17 +1,12 @@
 import { defineConfig } from '@rsbuild/core';
-import { presetMini, transformerVariantGroup } from 'unocss';
-import { pluginExample } from '../src';
+import { pluginUnoCss } from '../src/index.js';
 
 export default defineConfig({
   plugins: [
-    pluginExample({
-      config: {
-        presets: [presetMini()],
-        transformers: [transformerVariantGroup()],
-      },
-    }),
+    pluginUnoCss(),
   ],
   server: {
     port: 3001,
+    strictPort: true,
   },
 });

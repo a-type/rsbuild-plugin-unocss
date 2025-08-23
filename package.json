@@ -60,8 +60,11 @@
     "@jridgewell/remapping": "^2.3.5",
     "@unocss/config": "^66.4.2",
     "@unocss/core": "^66.4.2",
+    "chokidar": "^4.0.3",
     "magic-string": "^0.30.17",
     "pathe": "^2.0.3",
+    "rsbuild-plugin-virtual-module": "^0.3.1",
+    "tinyglobby": "^0.2.14",
     "unplugin-utils": "^0.3.0"
   }
 }

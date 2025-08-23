@@ -6,7 +6,7 @@ import './index.css';
 import raw from 'uno.css?raw';
 
 document.querySelector('#root')!.innerHTML = `
-<div class="color-white md:(color-black bg-orange) p-1 container">
+<div class="color-[white] md:(color-[black] bg-[#feb]) p-xs">
   <h1>Vanilla Rsbuild</h1>
   <p>Start building amazing things.</p>
   <pre>

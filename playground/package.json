@@ -3,10 +3,18 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "dev": "npx rsbuild dev",
+    "dev": "npx rsbuild dev --log-level debug",
     "build": "npx rsbuild build"
   },
   "dependencies": {
-    "change-case": "5.4.4"
+    "@a-type/ui": "^2.7.6",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "change-case": "5.4.4",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.4"
   }
 }
