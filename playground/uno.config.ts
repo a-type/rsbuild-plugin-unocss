@@ -6,13 +6,13 @@ export default defineConfig({
     pipeline: {
       include: [/\.(jsx|ts|tsx)($|\?)/],
     },
-    filesystem: [
-      './external/external.ts'
-    ]
+    filesystem: ['./external/external.ts'],
   },
-  presets: [preset({
-    // easier to see what's going on without preflight
-    noPreflight: true
-  })],
+  presets: [
+    preset({
+      // easier to see what's going on without preflight
+      noPreflight: true,
+    }),
+  ],
   transformers: [transformerVariantGroup()],
 });

@@ -1,1 +1,1 @@
-export const className = 'content-["external"]';
+export const className = 'content-["externalr"]';

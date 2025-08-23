@@ -1,11 +1,10 @@
-import type { RsbuildDevServer, RsbuildPlugin } from '@rsbuild/core';
-import type { UserConfig } from '@unocss/core';
-import { mkdirSync, writeFileSync } from 'node:fs';
 import fs from 'node:fs/promises';
-import path, { posix, resolve } from 'node:path';
+import path from 'node:path';
+import type { RsbuildPlugin } from '@rsbuild/core';
+import type { UserConfig } from '@unocss/core';
+import { pluginVirtualModule } from 'rsbuild-plugin-virtual-module';
 import { setupContentExtractor } from './integrationUtil/content.js';
 import { createContext } from './integrationUtil/context.js';
-import { resolveId } from './integrationUtil/layers.js';
 import { applyTransformers } from './integrationUtil/transformers.js';
 import { Rebuilder } from './Rebuilder.js';
 
@@ -15,142 +14,92 @@ export type PluginUnoCssOptions = {
 
 export const pluginUnoCss = (
   options: PluginUnoCssOptions = {},
-): RsbuildPlugin => ({
-  name: 'plugin-example',
+): RsbuildPlugin[] => {
+  const ctx = createContext(options.config);
+  const rebuilder = new Rebuilder(ctx);
 
-  setup(api) {
-    // load plugin context
-    const ctx = createContext(options.config);
-
-    let devServer: RsbuildDevServer | undefined = undefined;
-    api.onBeforeStartDevServer(({ server }) => {
-      devServer = server;
-    });
-
-    const rebuilder = new Rebuilder(ctx);
-    rebuilder.onBuild(async (result) => {
-      await fs.writeFile(
-        virtualModulesDir + resolveId('uno.css'),
-        `
-@import "./trigger.css";
-${result.css}
-`,
-      );
-      api.logger.info('🔄️ Regenerated CSS');
-      await fs.writeFile(
-        virtualModulesDir + '/trigger.js',
-        'export const tokens = ' +
-          ctx.tokens.size +
-          '; //' +
-          Date.now().toString(),
-      );
-      await fs.writeFile(
-        virtualModulesDir + '/trigger.css',
-        `.uno-nonce {
+  // when Uno invalidates, write a new unique value to the
+  // trigger file.
+  const virtualModulesDir = '.rsbuild-virtual-module';
+  const triggerFilePath = path.resolve(
+    'node_modules',
+    virtualModulesDir,
+    'trigger.css',
+  );
+  ctx.onInvalidate(async () => {
+    console.info('🔄️ Regenerated CSS');
+    await fs.writeFile(
+      triggerFilePath,
+      `.uno-nonce {
   --uno-nonce: ${ctx.tokens.size};
-s}`,
-      );
-    });
-
-    const virtualModulesDir = resolve(
-      api.getRsbuildConfig()?.root ?? process.cwd(),
-      'node_modules/.virtual',
+}`,
     );
+  });
 
-    mkdirSync(virtualModulesDir, { recursive: true });
-    writeFileSync(
-      virtualModulesDir + resolveId('uno.css'),
-      '@import "./trigger.css";',
-    );
-    writeFileSync(virtualModulesDir + '/trigger.js', '');
-    writeFileSync(virtualModulesDir + '/trigger.css', '');
+  const unoPlugin: RsbuildPlugin = {
+    name: 'plugin-unocss',
 
-    //  watch filesystem and inline dependencies.
-    setupContentExtractor(ctx, api.context.action === 'dev');
+    setup(api) {
+      //  watch filesystem and inline dependencies.
+      setupContentExtractor(ctx, api.context.action === 'dev');
 
-    api.modifyEnvironmentConfig((config, { mergeEnvironmentConfig }) => {
-      return mergeEnvironmentConfig(config, {
-        source: {
-          include: [virtualModulesDir],
+      // apply transforms to incoming TS files
+      // and trigger extraction on them as we
+      // receive them.
+      api.transform(
+        {
+          // TODO: build filter from pipeline rules
+          test: /\.tsx?$/,
         },
-      });
-    });
+        async ({ code, resource }) => {
+          api.logger.info('Transforming source', resource);
+          let final = code;
+          const result = await applyTransformers(ctx, code, resource, 'pre');
+          if (result) {
+            final = result.code;
+          }
 
-    // apply transforms to incoming TS files
-    // and trigger extraction on them as we
-    // receive them.
-    api.transform(
-      {
-        // TODO: build filter from pipeline rules
-        test: /\.tsx?$/,
-      },
-      async ({ code, resource }) => {
-        api.logger.info('Transforming source', resource);
-        let final = code;
-        const result = await applyTransformers(ctx, code, resource, 'pre');
-        if (result) {
-          final = result.code;
-        }
+          await ctx.extract(final, resource);
+          // I think we don't need to wait here, as this will
+          // be awaited in the transformer for uno.css itself.
+          // await rebuilder.next();
 
-        await ctx.extract(final, resource);
-        await rebuilder.next();
-
-        return final;
-      },
-    );
-    api.transform(
-      {
-        test: virtualModulesDir + resolveId('uno.css'),
-      },
-      async ({ code, addDependency }) => {
-        api.logger.info('Transforming uno.css');
-        // using this empty file to manually trigger hot
-        // reloads of the CSS.
-        const triggerPath = path.resolve(virtualModulesDir, 'trigger.css');
-        api.logger.info(`Watching ${triggerPath} for changes`);
-        addDependency(triggerPath);
-        return code;
-      },
-    );
-    api.transform(
-      {
-        test: virtualModulesDir + '/trigger.js',
-      },
-      ({ code }) => {
-        api.logger.info('Transforming trigger.js');
-        return code;
-      },
-    );
-
-    // match and map `import 'uno.css';` to our
-    // virtual module location in node_modules/.virtual
-    api.resolve(({ resolveData }) => {
-      // if the request matches an uno.css module
-      const entry = resolveId(resolveData.request);
-      if (!entry || entry === resolveData.request) {
-        return;
-      }
-
-      // preserve query
-      let query = '';
-      const queryIndex = resolveData.request.indexOf('?');
-      if (queryIndex >= 0) {
-        query = resolveData.request.slice(queryIndex);
-      }
-      const parsedQuery = new URLSearchParams(query);
-      // add token count to query to break cache when new tokens are added
-      parsedQuery.append('tokens', ctx.tokens.size.toString());
-      api.logger.info('Token count', ctx.tokens.size);
-      const rewritten = posix.join(
-        virtualModulesDir,
-        `${entry}?${parsedQuery.toString()}`,
+          return final;
+        },
       );
-      api.logger.info('Rewriting resolution for UnoCSS:', rewritten);
-      resolveData.request = rewritten;
-    });
 
-    api.onDevCompileDone(() => {
-      api.logger.info('💽 Dev Compile Done');
-    });
-  },
-});
+      // adds a nonce to any imports of "uno.css" which changes
+      // whenever the CSS is invalidated (tokens changed),
+      // so that the underlying code is not cached after invalidation.
+      api.resolve(({ resolveData }) => {
+        const [base, search] = resolveData.request.split('?');
+        if (base === 'uno.css') {
+          // add latest nonce as query
+          const params = new URLSearchParams(search);
+          params.set('tokens', ctx.tokens.size.toString());
+          resolveData.request = `${base}?${params.toString()}`;
+          api.logger.info('Resolved uno.css to', resolveData.request);
+        }
+      });
+
+      api.onDevCompileDone(() => {
+        api.logger.info('💽 Dev Compile Done');
+      });
+    },
+  };
+
+  const unoVirtualModulesPlugin = pluginVirtualModule({
+    virtualModules: {
+      'uno.css': async ({ addDependency }) => {
+        console.log('Resolving uno.css virtual module');
+        const result = await rebuilder.next();
+        console.log('Adding dependency on', triggerFilePath);
+        addDependency(triggerFilePath);
+        return `@import "./trigger.css";
+${result.css}`;
+      },
+    },
+  });
+
+  return [unoVirtualModulesPlugin, unoPlugin];
+};
