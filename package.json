@@ -1,67 +1,67 @@
 {
-  "name": "@a-type/rsbuild-plugin-unocss",
-  "version": "0.0.2",
-  "repository": {
-    "url": "https://github.com/a-type/rsbuild-plugin-unocss"
-  },
-  "license": "MIT",
-  "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    }
-  },
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
-  "files": [
-    "dist"
-  ],
-  "scripts": {
-    "build": "rslib build",
-    "dev": "rslib build --watch",
-    "lint": "biome check .",
-    "lint:write": "biome check . --write",
-    "prepare": "simple-git-hooks",
-    "prepublishOnly": "pnpm build",
-    "test": "playwright test",
-    "bump": "pnpx bumpp"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^2.1.1",
-    "@playwright/test": "^1.53.2",
-    "@rsbuild/core": "^1.4.2",
-    "@rslib/core": "^0.10.4",
-    "@types/node": "^22.15.34",
-    "playwright": "^1.53.2",
-    "simple-git-hooks": "^2.13.0",
-    "typescript": "^5.8.3",
-    "unocss": "^66.4.2"
-  },
-  "peerDependencies": {
-    "@rsbuild/core": "1.x"
-  },
-  "peerDependenciesMeta": {
-    "@rsbuild/core": {
-      "optional": true
-    }
-  },
-  "packageManager": "pnpm@10.12.4",
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
-  },
-  "dependencies": {
-    "@jridgewell/remapping": "^2.3.5",
-    "@unocss/config": "^66.4.2",
-    "@unocss/core": "^66.4.2",
-    "chokidar": "^4.0.3",
-    "magic-string": "^0.30.17",
-    "pathe": "^2.0.3",
-    "rsbuild-plugin-virtual-module": "^0.3.1",
-    "tinyglobby": "^0.2.14",
-    "unplugin-utils": "^0.3.0"
-  }
+	"name": "@a-type/rsbuild-plugin-unocss",
+	"version": "0.0.2",
+	"repository": {
+		"url": "https://github.com/a-type/rsbuild-plugin-unocss"
+	},
+	"license": "MIT",
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js",
+			"require": "./dist/index.cjs"
+		}
+	},
+	"main": "./dist/index.js",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.ts",
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "rslib build",
+		"dev": "rslib build --watch",
+		"lint": "biome check .",
+		"lint:write": "biome check . --write",
+		"prepare": "simple-git-hooks",
+		"prepublishOnly": "pnpm build",
+		"test": "playwright test",
+		"bump": "pnpx bumpp"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.1.1",
+		"@playwright/test": "^1.53.2",
+		"@rsbuild/core": "^1.4.2",
+		"@rslib/core": "^0.10.4",
+		"@types/node": "^22.15.34",
+		"playwright": "^1.53.2",
+		"simple-git-hooks": "^2.13.0",
+		"typescript": "^5.8.3",
+		"unocss": "^66.4.2"
+	},
+	"peerDependencies": {
+		"@rsbuild/core": "1.x"
+	},
+	"peerDependenciesMeta": {
+		"@rsbuild/core": {
+			"optional": true
+		}
+	},
+	"packageManager": "pnpm@10.12.4",
+	"publishConfig": {
+		"access": "public",
+		"registry": "https://registry.npmjs.org/"
+	},
+	"dependencies": {
+		"@jridgewell/remapping": "^2.3.5",
+		"@unocss/config": "^66.4.2",
+		"@unocss/core": "^66.4.2",
+		"chokidar": "^4.0.3",
+		"magic-string": "^0.30.17",
+		"pathe": "^2.0.3",
+		"rsbuild-plugin-virtual-module": "^0.3.1",
+		"tinyglobby": "^0.2.14",
+		"unplugin-utils": "^0.3.0"
+	}
 }
