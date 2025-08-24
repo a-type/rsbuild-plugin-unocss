@@ -18,12 +18,19 @@ import {
 import { defaultPipelineExclude, defaultPipelineInclude } from './defaults.js';
 import { deprecationCheck } from './deprecation.js';
 
-export function createContext<Config extends UserConfig<any> = UserConfig<any>>(
-	configOrPath?: Config | string,
-	defaults: UserConfigDefaults = {},
-	extraConfigSources: LoadConfigSource[] = [],
-	resolveConfigResult: (config: LoadConfigResult<Config>) => void = () => {},
-): UnocssPluginContext<Config> {
+export function createContext<
+	Config extends UserConfig<any> = UserConfig<any>,
+>({
+	configOrPath,
+	defaults = {},
+	extraConfigSources = [],
+	resolveConfigResult = () => {},
+}: {
+	configOrPath?: Config | string;
+	defaults?: UserConfigDefaults;
+	extraConfigSources?: LoadConfigSource[];
+	resolveConfigResult?: (config: LoadConfigResult<Config>) => void;
+}): UnocssPluginContext<Config> {
 	let root = process.cwd();
 	let rawConfig = {} as Config;
 	let configFileList: string[] = [];

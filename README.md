@@ -10,18 +10,15 @@
   <a href="https://npmcharts.com/compare/@a-type/rsbuild-plugin-unocss?minimal=true"><img src="https://img.shields.io/npm/dm/@a-type/rsbuild-plugin-unocss.svg?style=flat-square&colorA=564341&colorB=EDED91" alt="downloads" /></a>
 </p>
 
-## Warning
+## Features
 
-I do not know what I'm doing. But I am frustrated with the race condition bug that's plagued me in the 'official' UnoCSS Rspack plugin (air quotes as it's not documented) and my attempts at debugging it were not successful.
+This plugin doesn't support all UnoCSS features, but it does support some features not available in PostCSS and some workflows I wanted to experiment with for external libraries.
 
-Rsbuild plugins are not quite as verbose or hard to reason about as Rspack/Webpack, so I figured I'd try to build my own from scratch targeting Rsbuild only. No frills, I just need:
-
-1. My transformers applied to source code
-2. Uno's CSS emitted and importable via `uno.css`
-3. Hot reloading that always works on the first try
-4. 1 & 2 to also work during build
-
-I have something that appears to work but I'm just guessing at this, I don't know if I've done it right yet. Caveat emptor.
+- ✅ Transforms: rewrites source files (`pre` transforms only for now)
+- ✅ Filesystem watches in addition to bundled files (using `unoConfig.content.filesystem`)
+- ✅ Process `// @unocss-include` comments on selected external modules, even if not matched by your `content.pipeline` rules. This one makes it easy to add this magic comment to your output files in a component library and then run Uno on its output files when it's used in your actual app!
+- 🚫 Uno config watching (TODO)
+- 🚫 Uno scopes (not actually sure what these are)
 
 ## Usage
 
@@ -44,6 +41,12 @@ export default {
 };
 ```
 
+Import `uno.css` in your app:
+
+```ts
+import 'uno.css';
+```
+
 ## Options
 
 ### config
@@ -57,6 +60,25 @@ A path to an Uno config, or a literal config object. Otherwise it should be infe
 ```js
 pluginUnoCss({
 	config: 'uno.branded.config.ts',
+});
+```
+
+### enableIncludeCommentCheck
+
+Pass a filter function which takes the absolute path of a bundled source file and returns `true` if you want to check it for an `@unocss-include` comment.
+
+- Type: `(filePath: string) => boolean`
+- Default: `undefined`
+- Example:
+
+```js
+pluginUnoCss({
+	enableIncludeCommentCheck: (filePath) =>
+		// make sure your test is compatible with OS-dependent path formats
+		// by using path.join.
+		// I also recommend including the dist/output dir in your test, to avoid
+		// nested node_modules.
+		filePath.includes(path.join('@your-scope', 'component-library', 'dist')),
 });
 ```
 

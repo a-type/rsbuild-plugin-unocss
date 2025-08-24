@@ -8,11 +8,6 @@ export default defineConfig({
 		},
 		filesystem: ['./external/external.ts'],
 	},
-	presets: [
-		preset({
-			// easier to see what's going on without preflight
-			noPreflight: true,
-		}),
-	],
+	presets: [preset()],
 	transformers: [transformerVariantGroup()],
 });
