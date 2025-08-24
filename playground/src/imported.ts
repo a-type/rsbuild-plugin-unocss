@@ -1,1 +1,1 @@
-export const importedClass = 'text-xl after:content-["_+_Uno"]';
+export const importedClass = 'text-2xl after:content-["_+_Uno"]';

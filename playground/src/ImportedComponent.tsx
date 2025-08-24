@@ -9,7 +9,7 @@ export function ImportedComponent() {
 		return () => clearInterval(interval);
 	}, []);
 	return (
-		<div className="p-xs border border-default">
+		<div className="border border-black rounded">
 			Imported Component: {count}
 		</div>
 	);

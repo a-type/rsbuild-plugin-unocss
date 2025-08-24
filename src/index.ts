@@ -130,7 +130,7 @@ export const pluginUnoCss = (
 			}) => {
 				// check for exclude, this is not done in the transformer
 				// filter.
-				if (code.includes(IGNORE_COMMENT)) {
+				if (code.startsWith(`// ${IGNORE_COMMENT}`)) {
 					return code;
 				}
 
@@ -194,21 +194,6 @@ export const pluginUnoCss = (
 					},
 				);
 			}
-
-			// adds a nonce to any imports of "uno.css" which changes
-			// whenever the CSS is invalidated (tokens changed),
-			// so that the underlying code is not cached after invalidation.
-			api.resolve(({ resolveData }) => {
-				const [base, search] = resolveData.request.split('?');
-				if (base === 'uno.css' || base.endsWith(triggerFileName)) {
-					options.debug &&
-						api.logger.info('Resolving virtual module', resolveData.request);
-					// add latest nonce as query
-					const params = new URLSearchParams(search);
-					params.set('tokens', ctx.tokens.size.toString());
-					resolveData.request = `${base}?${params.toString()}`;
-				}
-			});
 		},
 	};
 
