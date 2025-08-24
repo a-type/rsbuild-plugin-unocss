@@ -82,6 +82,25 @@ pluginUnoCss({
 });
 ```
 
+### enableCacheExtractedCSS
+
+Pass a filter function to enable caching the extracted CSS classes from particular files. By default this caches any extractions from files in `node_modules` (see `enableIncludeCommentCheck` for why you might have extracted files from `node_modules`).
+
+You may need to change this if you are in a monorepo and want to extract CSS from other projects linked via `node_modules`. Without excluding them using this filter, their initial extracted CSS will be cached and they won't be scanned for changes. Return `false` for files matching your monorepo projects to re-enable live CSS reloading on them.
+
+- Type: `(filePath: string) => boolean`
+- Default: `(filePath: string) => filePath.includes('node_modules')`
+- Example:
+
+```js
+pluginUnoCss({
+	enableCacheExtractedCSS: (filePath) =>
+		filePath.includes(`@my-monorepo-scope`)
+			? false
+			: filePath.includes('node_modules'),
+});
+```
+
 ## License
 
 [MIT](./LICENSE).
