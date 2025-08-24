@@ -13,10 +13,17 @@ export class Rebuilder {
 		private ctx: UnocssPluginContext,
 		private options?: {
 			minify?: boolean;
+			debug?: boolean;
 		},
 	) {
 		ctx.onInvalidate(this.invalidate);
 	}
+
+	#log = (...args: any[]) => {
+		if (this.options?.debug) {
+			console.log('[UnoCSS Rebuild]', ...args);
+		}
+	};
 
 	onBuild = (callback: (result: GenerateResult<Set<string>>) => void) => {
 		this.#events.on('build', callback);
@@ -27,15 +34,15 @@ export class Rebuilder {
 
 	next = (): Promise<GenerateResult<Set<string>>> => {
 		if (this.building) {
-			console.log('waiting for in progress build');
+			this.#log('waiting for in progress build');
 			return new Promise((resolve) => {
 				this.#events.once('build', resolve);
 			});
 		} else if (this.#lastResult) {
-			console.log('cached lastResult');
+			this.#log('returning cached result');
 			return Promise.resolve(this.#lastResult);
 		} else {
-			console.log('triggering rebuild');
+			this.#log('triggering rebuild');
 			return this.rebuild();
 		}
 	};
@@ -54,6 +61,7 @@ export class Rebuilder {
 			this.options,
 		);
 		this.building = false;
+		this.#log('build complete', 'tokens:', this.ctx.tokens.size);
 		this.#events.emit('build', this.#lastResult);
 		return this.#lastResult;
 	};

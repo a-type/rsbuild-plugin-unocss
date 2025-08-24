@@ -2,7 +2,11 @@ import { defineConfig } from '@rsbuild/core';
 import { pluginUnoCss } from '../src/index.js';
 
 export default defineConfig({
-	plugins: [pluginUnoCss()],
+	plugins: [
+		pluginUnoCss({
+			enableIncludeCommentCheck: true,
+		}),
+	],
 	server: {
 		port: 3001,
 		strictPort: true,
