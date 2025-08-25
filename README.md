@@ -2,6 +2,8 @@
 
 [WIP] A minimal but stable Rsbuild plugin for UnoCSS, handwritten for Rsbuild instead of unplugin.
 
+> ⚠️ Performance in this early version seems pretty bad. I intend to improve it, but don't expect quick rebuilds if you adopt early.
+
 <p>
   <a href="https://npmjs.com/package/@a-type/rsbuild-plugin-unocss">
    <img src="https://img.shields.io/npm/v/rsbuild-plugin-unocss?style=flat-square&colorA=564341&colorB=EDED91" alt="npm version" />
