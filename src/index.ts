@@ -46,6 +46,13 @@ export type PluginUnoCssOptions = {
 	 */
 	enableCacheExtractedCSS?: (filePath: string) => boolean;
 	/**
+	 * Selectively disable applying your Uno transforms on specific files.
+	 * This can speed up builds if you know certain files don't need
+	 * transforms, particularly if you have included pre-transformed
+	 * files in your content.pipeline configuration.
+	 */
+	disableTransform?: (filePath: string) => boolean;
+	/**
 	 * Adds logs to indicate what the plugin is doing
 	 */
 	debug?: boolean;
@@ -69,6 +76,9 @@ export const pluginUnoCss = (
 	const cachedExtractions = new Set<string>();
 	const shouldCache =
 		options?.enableCacheExtractedCSS ??
+		((filePath) => filePath.includes('node_modules'));
+	const disableTransform =
+		options?.disableTransform ??
 		((filePath) => filePath.includes('node_modules'));
 	const extractedFiles = new Set<string>();
 
@@ -169,14 +179,17 @@ export const pluginUnoCss = (
 					return code;
 				}
 
-				options.debug && api.logger.info('Transforming source', resource);
 				let final = code;
-				// transformers like variant-group will rewrite the source
-				// so we apply them now.
-				const result = await applyTransformers(ctx, code, resource, 'pre');
-				if (result) {
-					final = result.code;
+				if (!disableTransform(resource)) {
+					options.debug && api.logger.info('Transforming source', resource);
+					// transformers like variant-group will rewrite the source
+					// so we apply them now.
+					const result = await applyTransformers(ctx, code, resource, 'pre');
+					if (result) {
+						final = result.code;
+					}
 				}
+
 				if (!cachedExtractions.has(resource)) {
 					// add to cache if user selects to. this file will
 					// not be extracted again.

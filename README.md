@@ -103,6 +103,20 @@ pluginUnoCss({
 });
 ```
 
+### disableTransform
+
+Selectively disable applying your Uno transforms on specific files. This can speed up builds if you know certain files don't need transforms, particularly if you have included pre-transformed files in your content.pipeline configuration.
+
+- Type: `(filePath: string) => boolean`
+- Default: `(filePath: string) => filePath.includes('node_modules')`
+- Example:
+
+```js
+pluginUnoCss({
+	disableTransform: (filePath) => filePath.includes('tests'),
+});
+```
+
 ## License
 
 [MIT](./LICENSE).
