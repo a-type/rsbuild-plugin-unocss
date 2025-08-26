@@ -33,7 +33,7 @@ test('should render page as expected', async ({ page }) => {
 
 	await expectAppliedStyles(page, '#test-element', {
 		margin: '8px',
-		background: 'rgb(255, 0, 0)',
+		'background-color': 'rgb(255, 0, 0)',
 	});
 
 	await server.close();
@@ -55,7 +55,7 @@ test('should build succeed', async ({ page }) => {
 
 	await expectAppliedStyles(page, '#test-element', {
 		margin: '8px',
-		background: 'rgb(255, 0, 0)',
+		'background-color': 'rgb(255, 0, 0)',
 	});
 
 	await server.close();
