@@ -67,7 +67,7 @@ pluginUnoCss({
 
 ### enableIncludeCommentCheck
 
-Pass a filter function which takes the absolute path of a bundled source file and returns `true` if you want to check it for an `@unocss-include` comment.
+Pass a filter function which takes the absolute path of a bundled source file and returns `true` if you want to check it for an `@unocss-include` comment. The file does _not_ have to be in your UnoCSS `content.pipeline` matchers. You can use this to extract CSS from precompiled NPM libraries without including them in your actual UnoCSS pipeline, as long as those libraries' built sources are postprocessed to add `// @unocss-include`.
 
 - Type: `(filePath: string) => boolean`
 - Default: `undefined`
