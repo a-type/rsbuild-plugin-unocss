@@ -6,6 +6,7 @@ export class Rebuilder {
 	#debounceTimeout: NodeJS.Timeout | null = null;
 	#events = new EventEmitter<{
 		build: [GenerateResult<Set<string>>];
+		beginBuild: [number];
 	}>();
 	#lastResult: GenerateResult<Set<string>> | null = null;
 
@@ -29,6 +30,12 @@ export class Rebuilder {
 		this.#events.on('build', callback);
 		return () => {
 			this.#events.off('build', callback);
+		};
+	};
+	onBeginBuild = (callback: (tokens: number) => void) => {
+		this.#events.on('beginBuild', callback);
+		return () => {
+			this.#events.off('beginBuild', callback);
 		};
 	};
 
@@ -56,6 +63,7 @@ export class Rebuilder {
 	};
 
 	rebuild = async () => {
+		this.#events.emit('beginBuild', this.ctx.tokens.size);
 		this.#lastResult = await this.ctx.uno.generate(
 			this.ctx.tokens,
 			this.options,

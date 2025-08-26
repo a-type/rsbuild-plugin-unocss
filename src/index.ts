@@ -56,6 +56,7 @@ export type PluginUnoCssOptions = {
 		onCssInvalidated?: (tokenCount: number) => void;
 		onCssGenerated?: (css: string) => void;
 		onCssResolved?: () => void;
+		onCssBuildBegan?: (tokenCount: number) => void;
 	};
 };
 
@@ -129,12 +130,16 @@ export const pluginUnoCss = (
 				await fs.writeFile(triggerFilePath, `uno-nonce: ${ctx.tokens.size}`);
 				options.events?.onCssInvalidated?.(ctx.tokens.size);
 			});
-			if (options.debug) {
-				rebuilder.onBuild((result) => {
+
+			rebuilder.onBuild((result) => {
+				if (options.debug) {
 					api.logger.info('Rebuilt UnoCSS, tokens:', ctx.tokens.size);
-					options.events?.onCssGenerated?.(result.css);
-				});
-			}
+				}
+				options.events?.onCssGenerated?.(result.css);
+			});
+			rebuilder.onBeginBuild((tokenCount) =>
+				options.events?.onCssBuildBegan?.(tokenCount),
+			);
 
 			api.modifyRsbuildConfig((config) => {
 				return mergeRsbuildConfig(

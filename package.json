@@ -36,17 +36,18 @@
 		"@biomejs/biome": "^2.1.1",
 		"@playwright/test": "^1.53.2",
 		"@rsbuild/core": "^1.4.2",
+		"@rsbuild/plugin-react": "catalog:",
 		"@rslib/core": "^0.10.4",
 		"@types/node": "^22.15.34",
+		"@types/react": "catalog:",
+		"@types/react-dom": "catalog:",
 		"playwright": "^1.53.2",
+		"react": "catalog:",
+		"react-dom": "catalog:",
 		"simple-git-hooks": "^2.13.0",
 		"typescript": "^5.8.3",
 		"unocss": "^66.4.2",
-		"react": "catalog:",
-		"react-dom": "catalog:",
-		"@rsbuild/plugin-react": "catalog:",
-		"@types/react": "catalog:",
-		"@types/react-dom": "catalog:"
+		"vitest": "^3.2.4"
 	},
 	"peerDependencies": {
 		"@rsbuild/core": "1.x"
