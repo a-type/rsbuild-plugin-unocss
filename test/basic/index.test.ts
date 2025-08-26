@@ -1,17 +1,25 @@
-import { dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 import { createRsbuild } from '@rsbuild/core';
+import { presetMini } from 'unocss';
 import { pluginUnoCss } from '../../src';
-import { getRandomPort } from '../helper';
+import { expectAppliedStyles, getRandomPort } from '../helper';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const basicPlugin = pluginUnoCss({
+	config: {
+		presets: [presetMini()],
+		content: {
+			pipeline: {
+				include: [/\.(jsx|ts|tsx)($|\?)/],
+			},
+		},
+	},
+});
 
 test('should render page as expected', async ({ page }) => {
 	const rsbuild = await createRsbuild({
-		cwd: __dirname,
+		cwd: import.meta.dirname,
 		rsbuildConfig: {
-			plugins: [pluginUnoCss()],
+			plugins: [basicPlugin],
 			server: {
 				port: getRandomPort(),
 			},
@@ -23,14 +31,19 @@ test('should render page as expected', async ({ page }) => {
 	await page.goto(urls[0]);
 	expect(await page.evaluate('window.test')).toBe(1);
 
+	await expectAppliedStyles(page, '#test-element', {
+		margin: '8px',
+		background: 'rgb(255, 0, 0)',
+	});
+
 	await server.close();
 });
 
 test('should build succeed', async ({ page }) => {
 	const rsbuild = await createRsbuild({
-		cwd: __dirname,
+		cwd: import.meta.dirname,
 		rsbuildConfig: {
-			plugins: [pluginUnoCss()],
+			plugins: [basicPlugin],
 		},
 	});
 
@@ -39,6 +52,11 @@ test('should build succeed', async ({ page }) => {
 
 	await page.goto(urls[0]);
 	expect(await page.evaluate('window.test')).toBe(1);
+
+	await expectAppliedStyles(page, '#test-element', {
+		margin: '8px',
+		background: 'rgb(255, 0, 0)',
+	});
 
 	await server.close();
 });

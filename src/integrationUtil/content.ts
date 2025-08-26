@@ -70,4 +70,10 @@ export async function setupContentExtractor(
 
 		await Promise.all(files.map(extractFile));
 	}
+
+	const matched = content?.filesystem ?? [];
+	if (content?.inline) {
+		matched.push(`${content.inline.length} inline content items`);
+	}
+	return matched;
 }

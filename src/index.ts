@@ -49,6 +49,14 @@ export type PluginUnoCssOptions = {
 	 * Adds logs to indicate what the plugin is doing
 	 */
 	debug?: boolean;
+	/**
+	 * Used for testing, but you can subscribe if you want.
+	 */
+	events?: {
+		onCssInvalidated?: (tokenCount: number) => void;
+		onCssGenerated?: (css: string) => void;
+		onCssResolved?: () => void;
+	};
 };
 
 export const pluginUnoCss = (
@@ -79,6 +87,11 @@ export const pluginUnoCss = (
 		name: 'plugin-unocss',
 
 		setup(api) {
+			ctx.updateRoot(api.context.rootPath).then(() => {
+				if (options.debug) {
+					api.logger.info('Updated root path:', api.context.rootPath);
+				}
+			});
 			const resolvedVirtualModulesDir = path.resolve(
 				api.context.rootPath,
 				'node_modules',
@@ -92,17 +105,34 @@ export const pluginUnoCss = (
 
 			//  watch filesystem and inline dependencies.
 			// TODO: how to detect --watch arg to build, too?
-			setupContentExtractor(ctx, api.context.action === 'dev');
+			const watchExtractedFiles = api.context.action === 'dev';
+			const contentExtractionPromise = setupContentExtractor(
+				ctx,
+				watchExtractedFiles,
+			).then((files) => {
+				if (options.debug) {
+					api.logger.info(
+						`${watchExtractedFiles ? 'Watching' : 'Extracted'} filesystem content:`,
+						files,
+					);
+				}
+			});
+
+			api.onBeforeBuild(async () => {
+				await contentExtractionPromise;
+			});
 
 			// when Uno invalidates, write a new unique value to the
 			// trigger file.
 			ctx.onInvalidate(async () => {
 				options.debug && api.logger.info('UnoCSS invalidated');
 				await fs.writeFile(triggerFilePath, `uno-nonce: ${ctx.tokens.size}`);
+				options.events?.onCssInvalidated?.(ctx.tokens.size);
 			});
 			if (options.debug) {
-				rebuilder.onBuild(() => {
+				rebuilder.onBuild((result) => {
 					api.logger.info('Rebuilt UnoCSS, tokens:', ctx.tokens.size);
+					options.events?.onCssGenerated?.(result.css);
 				});
 			}
 
@@ -209,6 +239,7 @@ export const pluginUnoCss = (
 				// CSS exists, return the cached build, or wait until
 				// an in-progress build is complete.
 				const result = await rebuilder.next();
+				options.events?.onCssResolved?.();
 				return result.css;
 			},
 		},
