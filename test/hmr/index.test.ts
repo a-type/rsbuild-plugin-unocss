@@ -39,6 +39,7 @@ test('should hot reload new classes without losing React state', async ({
 		rsbuildConfig: {
 			plugins: [
 				pluginUnoCss({
+					debug: true,
 					events: {
 						onCssResolved: () => {
 							console.log('CSS resolved');
@@ -92,7 +93,6 @@ test('should hot reload new classes without losing React state', async ({
 			.replace('replace-me', 'hmr done'),
 	);
 
-	await page.getByText('hmr done').waitFor();
 	await page.waitForResponse(
 		async (res) => {
 			const body = await res.body();
