@@ -9,12 +9,14 @@ import { ImportedComponent } from './ImportedComponent';
 import { importedClass } from './imported.js';
 import { jsClass } from './jsFile.js';
 
-const container = document.createElement('div');
+const container = document.getElementById('root')!;
 document.body.appendChild(container);
 createRoot(container).render(
-	<Provider>
+	<Provider disableParticles disableTitleBarColor>
 		<Box
 			col
+			surface
+			border
 			gap
 			items="start"
 			className="color-black md:(color-primary-ink bg-primary-wash) p-sm"

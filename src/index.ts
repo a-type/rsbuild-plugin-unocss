@@ -7,6 +7,7 @@ import {
 	type TransformHandler,
 } from '@rsbuild/core';
 import type { UserConfig } from '@unocss/core';
+import { type FSWatcher, watch } from 'chokidar';
 import { pluginVirtualModule } from 'rsbuild-plugin-virtual-module';
 import { IGNORE_COMMENT } from './integrationUtil/constants.js';
 import { setupContentExtractor } from './integrationUtil/content.js';
@@ -242,6 +243,45 @@ export const pluginUnoCss = (
 					},
 				);
 			}
+
+			// watch for config changes and trigger reloads.
+			let watchedConfigFiles: string[];
+			let watcher: FSWatcher;
+			api.onBeforeStartDevServer(() => {
+				ctx.ready.then(({ sources }) => {
+					if (options.debug) {
+						api.logger.info(
+							'UnoCSS config loaded with sources:',
+							sources,
+							'Directories will be watched recursively.',
+						);
+					}
+					watchedConfigFiles = sources;
+					async function watchConfig() {
+						if (watcher) {
+							await watcher.close();
+						}
+						watcher = watch(watchedConfigFiles, {
+							ignoreInitial: true,
+						}).on('all', async (event, changedPath) => {
+							if (options.debug) {
+								api.logger.info(`Config file ${event} detected:`, changedPath);
+							}
+							await ctx.reloadConfig().then(({ sources }) => {
+								watchedConfigFiles = sources;
+								if (options.debug) {
+									api.logger.info(
+										'UnoCSS config reloaded with sources:',
+										sources,
+									);
+								}
+								watchConfig();
+							});
+						});
+					}
+					watchConfig();
+				});
+			});
 		},
 	};
 

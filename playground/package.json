@@ -7,7 +7,7 @@
 		"build": "npx rsbuild build"
 	},
 	"dependencies": {
-		"@a-type/ui": "^2.8.0",
+		"@a-type/ui": "^5.0.13",
 		"@types/react": "catalog:",
 		"@types/react-dom": "catalog:",
 		"change-case": "5.4.4",
