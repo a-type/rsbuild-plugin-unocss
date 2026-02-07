@@ -6,7 +6,7 @@ on:
   # Run `npm run bump` to bump the version and create a git tag.
   push:
     tags:
-      - 'v*'
+      - "v*"
 
   workflow_dispatch:
 
@@ -43,12 +43,9 @@ jobs:
         run: pnpm build
 
       - name: Publish
-        uses: JS-DevTools/npm-publish@v3
-        with:
-          token: ${{ secrets.NPM_TOKEN }}
-          access: public
+        run: pnpm publish --access public --no-git-checks
 
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
-          generateReleaseNotes: 'true'
+          generateReleaseNotes: "true"
