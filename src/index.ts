@@ -6,7 +6,7 @@ import {
 	type RsbuildPlugin,
 	type TransformHandler,
 } from '@rsbuild/core';
-import type { UserConfig } from '@unocss/core';
+import type { GenerateResult, UserConfig } from '@unocss/core';
 import { type FSWatcher, watch } from 'chokidar';
 import { pluginVirtualModule } from 'rsbuild-plugin-virtual-module';
 import { IGNORE_COMMENT } from './integrationUtil/constants.js';
@@ -38,12 +38,17 @@ export type PluginUnoCssOptions = {
 	 */
 	enableIncludeCommentCheck?: (filePath: string) => boolean;
 	/**
-	 * Choose files which should have their CSS extraction cached
-	 * during dev/watch mode after it's first processed. These
-	 * should be files which never change during development.
+	 * Not for use on live reloaded source files!
+	 *
+	 * Indicate files which should have their CSS extraction cached
+	 * INDEFINITELY during dev/watch mode after they are first processed.
+	 * These should be files which never change during development.
 	 * Defaults to anything in node_modules. Changing this is
 	 * only necessary if you are linking live project files into
 	 * node_modules, for example in a monorepo.
+	 *
+	 * Selectively caching files can keep builds quick by skipping
+	 * files you know will never change.
 	 */
 	enableCacheExtractedCSS?: (filePath: string) => boolean;
 	/**
@@ -58,12 +63,16 @@ export type PluginUnoCssOptions = {
 	 */
 	debug?: boolean;
 	/**
+	 * Whether to minify the generated CSS.
+	 */
+	minify?: boolean;
+	/**
 	 * Used for testing, but you can subscribe if you want.
 	 */
 	events?: {
 		onCssInvalidated?: (tokenCount: number) => void;
 		onCssGenerated?: (css: string) => void;
-		onCssResolved?: () => void;
+		onCssResolved?: (result: GenerateResult<Set<string>>) => void;
 		onCssBuildBegan?: (tokenCount: number) => void;
 	};
 };
@@ -72,7 +81,7 @@ export const pluginUnoCss = (
 	options: PluginUnoCssOptions = {},
 ): RsbuildPlugin[] => {
 	const ctx = createContext({ configOrPath: options.config });
-	const rebuilder = new Rebuilder(ctx);
+	const rebuilder = new Rebuilder(ctx, options);
 
 	const cachedExtractions = new Set<string>();
 	const shouldCache =
@@ -81,7 +90,6 @@ export const pluginUnoCss = (
 	const disableTransform =
 		options?.disableTransform ??
 		((filePath) => filePath.includes('node_modules'));
-	const extractedFiles = new Set<string>();
 
 	const virtualModulesDirName = '.uno-virtual-module';
 	const triggerFileName = 'uno.trigger';
@@ -99,10 +107,15 @@ export const pluginUnoCss = (
 		name: 'plugin-unocss',
 
 		setup(api) {
-			ctx.updateRoot(api.context.rootPath).then(() => {
+			function log(level: 'info' | 'debug', ...args: any[]) {
 				if (options.debug) {
-					api.logger.info('Updated root path:', api.context.rootPath);
+					api.logger[level]('[UnoCSS]', Date.now(), ...args);
 				}
+			}
+			rebuilder.configure((...args) => log('info', ...args));
+
+			ctx.updateRoot(api.context.rootPath).then(() => {
+				log('info', 'Updated root path:', api.context.rootPath);
 			});
 			const resolvedVirtualModulesDir = path.resolve(
 				api.context.rootPath,
@@ -122,12 +135,11 @@ export const pluginUnoCss = (
 				ctx,
 				watchExtractedFiles,
 			).then((files) => {
-				if (options.debug) {
-					api.logger.info(
-						`${watchExtractedFiles ? 'Watching' : 'Extracted'} filesystem content:`,
-						files,
-					);
-				}
+				log(
+					'info',
+					`${watchExtractedFiles ? 'Watching' : 'Extracted'} filesystem content:`,
+					files,
+				);
 			});
 
 			api.onBeforeBuild(async () => {
@@ -137,15 +149,13 @@ export const pluginUnoCss = (
 			// when Uno invalidates, write a new unique value to the
 			// trigger file.
 			ctx.onInvalidate(async () => {
-				options.debug && api.logger.info('UnoCSS invalidated');
+				options.debug &&
+					log('info', `UnoCSS invalidated (${ctx.tokens.size} tokens)`);
 				await fs.writeFile(triggerFilePath, `uno-nonce: ${ctx.tokens.size}`);
 				options.events?.onCssInvalidated?.(ctx.tokens.size);
 			});
 
 			rebuilder.onBuild((result) => {
-				if (options.debug) {
-					api.logger.info('Rebuilt UnoCSS, tokens:', ctx.tokens.size);
-				}
 				options.events?.onCssGenerated?.(result.css);
 			});
 			rebuilder.onBeginBuild((tokenCount) =>
@@ -182,7 +192,7 @@ export const pluginUnoCss = (
 
 				let final = code;
 				if (!disableTransform(resource)) {
-					options.debug && api.logger.info('Transforming source', resource);
+					log('info', 'Transforming source', resource);
 					// transformers like variant-group will rewrite the source
 					// so we apply them now.
 					const result = await applyTransformers(ctx, code, resource, 'pre');
@@ -195,10 +205,10 @@ export const pluginUnoCss = (
 					// add to cache if user selects to. this file will
 					// not be extracted again.
 					if (shouldCache(resource)) {
-						options.debug && api.logger.info('Caching extracted CSS', resource);
+						log('info', 'Caching extracted CSS', resource);
 						cachedExtractions.add(resource);
 					} else {
-						extractedFiles.add(resource);
+						log('info', 'Not caching extracted CSS', resource);
 					}
 					// await extraction on source rebuild. we await here,
 					// rather than doing it out-of-band, to ensure we don't
@@ -213,9 +223,9 @@ export const pluginUnoCss = (
 					// until it's complete without stopping here, but until
 					// that's thought up, we prefer correctness.
 					await ctx.extract(final, resource);
+					log('info', 'Finished extracting CSS from source', resource);
 				} else {
-					options.debug &&
-						api.logger.info('Skipping extraction for cached CSS', resource);
+					log('info', 'Skipping extraction for cached CSS', resource);
 				}
 				return final;
 			};
@@ -249,13 +259,12 @@ export const pluginUnoCss = (
 			let watcher: FSWatcher;
 			api.onBeforeStartDevServer(() => {
 				ctx.ready.then(({ sources }) => {
-					if (options.debug) {
-						api.logger.info(
-							'UnoCSS config loaded with sources:',
-							sources,
-							'Directories will be watched recursively.',
-						);
-					}
+					log(
+						'info',
+						'UnoCSS config loaded with sources:',
+						sources,
+						'Directories will be watched recursively.',
+					);
 					watchedConfigFiles = sources;
 					async function watchConfig() {
 						if (watcher) {
@@ -264,17 +273,10 @@ export const pluginUnoCss = (
 						watcher = watch(watchedConfigFiles, {
 							ignoreInitial: true,
 						}).on('all', async (event, changedPath) => {
-							if (options.debug) {
-								api.logger.info(`Config file ${event} detected:`, changedPath);
-							}
+							log('info', `Config file ${event} detected:`, changedPath);
 							await ctx.reloadConfig().then(({ sources }) => {
 								watchedConfigFiles = sources;
-								if (options.debug) {
-									api.logger.info(
-										'UnoCSS config reloaded with sources:',
-										sources,
-									);
-								}
+								log('info', 'UnoCSS config reloaded with sources:', sources);
 								watchConfig();
 							});
 						});
@@ -297,7 +299,7 @@ export const pluginUnoCss = (
 				// CSS exists, return the cached build, or wait until
 				// an in-progress build is complete.
 				const result = await rebuilder.next();
-				options.events?.onCssResolved?.();
+				options.events?.onCssResolved?.(result);
 				return result.css;
 			},
 		},

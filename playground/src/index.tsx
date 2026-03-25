@@ -23,7 +23,7 @@ createRoot(container).render(
 		>
 			<h1 className={importedClass}>Rsbuild</h1>
 			<p className={jsClass}>{pascalCase('Start building amazing things.')}</p>
-			<Button>Library Component</Button>
+			<Button className="m-[40px]">Library Component</Button>
 			<ImportedComponent />
 		</Box>
 	</Provider>,

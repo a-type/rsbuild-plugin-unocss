@@ -37,6 +37,8 @@ test('should hot reload new classes without losing React state', async ({
 	const rsbuild = await createRsbuild({
 		cwd: import.meta.dirname,
 		rsbuildConfig: {
+			logLevel: 'info',
+
 			plugins: [
 				pluginUnoCss({
 					debug: true,
@@ -112,6 +114,52 @@ test('should hot reload new classes without losing React state', async ({
 	});
 
 	expect(elementContent).toBe(newElementContent);
+
+	// make rapid changes that add classes, make sure the styling is updated
+	let hexColor = 0xff0000;
+
+	// run out of band
+	console.log('Starting rapid changes');
+	(async () => {
+		for (let i = 0; i < 30; i++) {
+			hexColor += 1;
+			const currentContent = await fs.readFile(workingFile, 'utf-8');
+			await fs.writeFile(
+				workingFile,
+				currentContent
+					.replace(/bg-\[#[a-f0-9]{6}\]/, `bg-[#${hexColor.toString(16)}]`)
+					.replace('bg-[green]', `bg-[#${hexColor.toString(16)}]`),
+			);
+			// delay 20mms
+			await new Promise((resolve) => setTimeout(resolve, 20));
+		}
+	})();
+
+	// begin looking for the final build
+	let lastCss = '';
+	try {
+		await page.waitForResponse(
+			async (res) => {
+				if (!res.url().includes('index.css')) return false;
+				const body = await res.body();
+				lastCss = body.toString();
+				return body.includes(`#${hexColor.toString(16)}`);
+			},
+			{
+				timeout: 10000,
+			},
+		);
+	} catch (e) {
+		console.error(
+			'Failed to find CSS response with expected color. Last CSS:',
+			lastCss,
+		);
+		throw e;
+	}
+
+	await expectAppliedStyles(page, '#test', {
+		'background-color': `rgb(${(hexColor >> 16) & 0xff}, ${(hexColor >> 8) & 0xff}, ${hexColor & 0xff})`,
+	});
 
 	await server.close();
 });

@@ -16,6 +16,22 @@ export default defineConfig({
 				);
 			},
 			debug: true,
+			events: {
+				onCssBuildBegan: (tokenCount) => {
+					console.log(`CSS build started with ${tokenCount} tokens`);
+				},
+				onCssInvalidated: (tokenCount) => {
+					console.log(`CSS invalidated with ${tokenCount} tokens`);
+				},
+				onCssGenerated: (css) => {
+					console.log(`CSS generated with length ${css.length}`);
+				},
+				onCssResolved: (result) => {
+					console.log(
+						`CSS resolved with ${result.matched.size} matched tokens`,
+					);
+				},
+			},
 		}),
 		pluginReact(),
 	],

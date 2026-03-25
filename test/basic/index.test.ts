@@ -39,16 +39,21 @@ test('should render page as expected', async ({ page }) => {
 	await server.close();
 });
 
-test('should build succeed', async ({ page }) => {
+test('should build and succeed', async ({ page }) => {
 	const rsbuild = await createRsbuild({
 		cwd: import.meta.dirname,
 		rsbuildConfig: {
 			plugins: [basicPlugin],
+			server: {
+				port: getRandomPort(),
+			},
 		},
 	});
 
 	await rsbuild.build();
-	const { server, urls } = await rsbuild.preview();
+	const { server, urls } = await rsbuild.preview({
+		getPortSilently: true,
+	});
 
 	await page.goto(urls[0]);
 	expect(await page.evaluate('window.test')).toBe(1);

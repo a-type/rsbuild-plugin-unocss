@@ -69,7 +69,7 @@ test('should render page as expected', async ({ page }) => {
 	await server.close();
 });
 
-test('should build succeed', async ({ page }) => {
+test('should build and succeed', async ({ page }) => {
 	const rsbuild = await createRsbuild({
 		cwd: import.meta.dirname,
 		rsbuildConfig: {
@@ -78,7 +78,9 @@ test('should build succeed', async ({ page }) => {
 	});
 
 	await rsbuild.build();
-	const { server, urls } = await rsbuild.preview();
+	const { server, urls } = await rsbuild.preview({
+		getPortSilently: true,
+	});
 
 	await page.goto(urls[0]);
 
