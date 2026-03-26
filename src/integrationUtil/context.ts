@@ -73,13 +73,13 @@ export function createContext<
 		await uno.setConfig(rawConfig);
 		uno.config.envMode = 'dev';
 		rollupFilter =
-			rawConfig.content?.pipeline === false
-				? () => false
-				: createFilter(
-						rawConfig.content?.pipeline?.include || defaultPipelineInclude,
-						rawConfig.content?.pipeline?.exclude || defaultPipelineExclude,
-						{ resolve: typeof configOrPath === 'string' ? configOrPath : root },
-					);
+			rawConfig.content?.pipeline === false ?
+				() => false
+			:	createFilter(
+					rawConfig.content?.pipeline?.include || defaultPipelineInclude,
+					rawConfig.content?.pipeline?.exclude || defaultPipelineExclude,
+					{ resolve: typeof configOrPath === 'string' ? configOrPath : root },
+				);
 		tokens.clear();
 		await Promise.all(
 			modules.map((code, id) =>
@@ -136,6 +136,40 @@ export function createContext<
 		if (tasks[0] === _tasks[0]) tasks.splice(0, _tasks.length);
 	}
 
+	/**
+	 * Get regexes to match virtual module ids
+	 */
+	const vmpCache = new Map<
+		string,
+		{
+			prefix: string;
+			RESOLVED_ID_WITH_QUERY_RE: RegExp;
+			RESOLVED_ID_RE: RegExp;
+		}
+	>();
+	async function getVMPRegexes(): Promise<{
+		prefix: string;
+		RESOLVED_ID_WITH_QUERY_RE: RegExp;
+		RESOLVED_ID_RE: RegExp;
+	}> {
+		const config = await getConfig();
+		const prefix = config.virtualModulePrefix || '__uno';
+
+		if (vmpCache.has(prefix)) return vmpCache.get(prefix)!;
+
+		const RESOLVED_ID_WITH_QUERY_RE = new RegExp(
+			`[/\\\\]${prefix}(_.*?)?\\.css(\\?.*)?$`,
+		);
+		const RESOLVED_ID_RE = new RegExp(`[/\\\\]${prefix}(?:_(.*?))?\.css$`);
+		const regexes = {
+			prefix,
+			RESOLVED_ID_WITH_QUERY_RE,
+			RESOLVED_ID_RE,
+		};
+		vmpCache.set(prefix, regexes);
+		return regexes;
+	}
+
 	return {
 		get ready() {
 			return ready;
@@ -168,5 +202,6 @@ export function createContext<
 		},
 		updateRoot,
 		getConfigFileList: () => configFileList,
+		getVMPRegexes,
 	};
 }
