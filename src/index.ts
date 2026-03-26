@@ -75,6 +75,9 @@ export type PluginUnoCssOptions = {
 		onCssResolved?: (result: GenerateResult<Set<string>>) => void;
 		onCssBuildBegan?: (tokenCount: number) => void;
 	};
+
+	/** don't use this. I'm testing something, will remove later. */
+	__do_not_use__disable_trigger_file?: boolean;
 };
 
 export const pluginUnoCss = (
@@ -296,7 +299,9 @@ export const pluginUnoCss = (
 				// explicitly depend on our 'trigger' file which
 				// invalidates our CSS programmatically when it is
 				// written.
-				addDependency(triggerFilePath);
+				if (!options.__do_not_use__disable_trigger_file) {
+					addDependency(triggerFilePath);
+				}
 				// next() will either trigger new build if no prior
 				// CSS exists, return the cached build, or wait until
 				// an in-progress build is complete.

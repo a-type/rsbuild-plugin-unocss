@@ -5,7 +5,7 @@ import { pluginUnoCss } from '../../src';
 import { expectAppliedStyles, getRandomPort } from '../helper';
 
 const basicPlugin = pluginUnoCss({
-	debug: true,
+	logLevel: 'info',
 	config: {
 		presets: [presetMini()],
 		transformers: [transformerVariantGroup()],

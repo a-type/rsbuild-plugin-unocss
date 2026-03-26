@@ -41,7 +41,7 @@ test('should hot reload new classes without losing React state', async ({
 
 			plugins: [
 				pluginUnoCss({
-					debug: true,
+					logLevel: 'info',
 					events: {
 						onCssResolved: () => {
 							console.log('CSS resolved');
