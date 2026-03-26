@@ -73,13 +73,13 @@ export function createContext<
 		await uno.setConfig(rawConfig);
 		uno.config.envMode = 'dev';
 		rollupFilter =
-			rawConfig.content?.pipeline === false ?
-				() => false
-			:	createFilter(
-					rawConfig.content?.pipeline?.include || defaultPipelineInclude,
-					rawConfig.content?.pipeline?.exclude || defaultPipelineExclude,
-					{ resolve: typeof configOrPath === 'string' ? configOrPath : root },
-				);
+			rawConfig.content?.pipeline === false
+				? () => false
+				: createFilter(
+						rawConfig.content?.pipeline?.include || defaultPipelineInclude,
+						rawConfig.content?.pipeline?.exclude || defaultPipelineExclude,
+						{ resolve: typeof configOrPath === 'string' ? configOrPath : root },
+					);
 		tokens.clear();
 		await Promise.all(
 			modules.map((code, id) =>
