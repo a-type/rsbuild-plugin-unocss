@@ -152,7 +152,7 @@ export const pluginUnoCss = (
 			// when Uno invalidates, write a new unique value to the
 			// trigger file.
 			ctx.onInvalidate(async () => {
-				log('info', `UnoCSS invalidated (${ctx.tokens.size} tokens)`);
+				log('debug', `UnoCSS invalidated (${ctx.tokens.size} tokens)`);
 				await fs.writeFile(triggerFilePath, `uno-nonce: ${ctx.tokens.size}`);
 				options.events?.onCssInvalidated?.(ctx.tokens.size);
 			});
