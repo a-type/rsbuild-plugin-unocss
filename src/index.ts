@@ -61,7 +61,7 @@ export type PluginUnoCssOptions = {
 	/**
 	 * Adds logs to indicate what the plugin is doing
 	 */
-	debug?: boolean;
+	logLevel?: 'debug' | 'info';
 	/**
 	 * Whether to minify the generated CSS.
 	 */
@@ -108,11 +108,14 @@ export const pluginUnoCss = (
 
 		setup(api) {
 			function log(level: 'info' | 'debug', ...args: any[]) {
-				if (options.debug) {
-					api.logger[level]('[UnoCSS]', Date.now(), ...args);
+				if (
+					options.logLevel === 'debug' ||
+					(options.logLevel === 'info' && level === 'info')
+				) {
+					api.logger.info('[UnoCSS]', Date.now(), ...args);
 				}
 			}
-			rebuilder.configure((...args) => log('info', ...args));
+			rebuilder.configure(log);
 
 			ctx.updateRoot(api.context.rootPath).then(() => {
 				log('info', 'Updated root path:', api.context.rootPath);
@@ -149,8 +152,7 @@ export const pluginUnoCss = (
 			// when Uno invalidates, write a new unique value to the
 			// trigger file.
 			ctx.onInvalidate(async () => {
-				options.debug &&
-					log('info', `UnoCSS invalidated (${ctx.tokens.size} tokens)`);
+				log('info', `UnoCSS invalidated (${ctx.tokens.size} tokens)`);
 				await fs.writeFile(triggerFilePath, `uno-nonce: ${ctx.tokens.size}`);
 				options.events?.onCssInvalidated?.(ctx.tokens.size);
 			});
@@ -192,7 +194,7 @@ export const pluginUnoCss = (
 
 				let final = code;
 				if (!disableTransform(resource)) {
-					log('info', 'Transforming source', resource);
+					log('debug', 'Transforming source', resource);
 					// transformers like variant-group will rewrite the source
 					// so we apply them now.
 					const result = await applyTransformers(ctx, code, resource, 'pre');
@@ -205,10 +207,10 @@ export const pluginUnoCss = (
 					// add to cache if user selects to. this file will
 					// not be extracted again.
 					if (shouldCache(resource)) {
-						log('info', 'Caching extracted CSS', resource);
+						log('debug', 'Caching extracted CSS', resource);
 						cachedExtractions.add(resource);
 					} else {
-						log('info', 'Not caching extracted CSS', resource);
+						log('debug', 'Not caching extracted CSS', resource);
 					}
 					// await extraction on source rebuild. we await here,
 					// rather than doing it out-of-band, to ensure we don't
@@ -223,9 +225,9 @@ export const pluginUnoCss = (
 					// until it's complete without stopping here, but until
 					// that's thought up, we prefer correctness.
 					await ctx.extract(final, resource);
-					log('info', 'Finished extracting CSS from source', resource);
+					log('debug', 'Finished extracting CSS from source', resource);
 				} else {
-					log('info', 'Skipping extraction for cached CSS', resource);
+					log('debug', 'Skipping extraction for cached CSS', resource);
 				}
 				return final;
 			};
@@ -290,7 +292,7 @@ export const pluginUnoCss = (
 	const unoVirtualModulesPlugin = pluginVirtualModule({
 		virtualModules: {
 			'uno.css': async ({ addDependency }) => {
-				options.debug && console.info('debug   generating UnoCSS');
+				options.logLevel && console.info('info    generating UnoCSS');
 				// explicitly depend on our 'trigger' file which
 				// invalidates our CSS programmatically when it is
 				// written.

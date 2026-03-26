@@ -13,7 +13,7 @@ export class Rebuilder {
 		invalidations: number;
 		result: GenerateResult<Set<string>>;
 	} | null = null;
-	#log: (...args: any[]) => void = () => {};
+	#log: (level: 'info' | 'debug', ...args: any[]) => void = () => {};
 
 	get #buildQueued() {
 		return !!this.#debounceTimeout;
@@ -58,13 +58,13 @@ export class Rebuilder {
 
 	next = (): Promise<GenerateResult<Set<string>>> => {
 		if (this.#lastResult) {
-			this.#log('up to date, returning last result');
+			this.#log('info', 'up to date, returning last result');
 			return Promise.resolve(this.#lastResult);
 		}
 		if (this.#nextResultPromise) {
-			this.#log('waiting for in progress build');
+			this.#log('info', 'waiting for in progress build');
 			return this.#nextResultPromise.then((result) => {
-				this.#log('in progress build complete, returning result');
+				this.#log('info', 'in progress build complete, returning result');
 				return result;
 			});
 		} else if (this.#buildQueued) {
@@ -73,15 +73,15 @@ export class Rebuilder {
 			// which will either resolve the cached last result or await
 			// a newly triggered build or debounce if another invalidation
 			// happened since.
-			this.#log('build queued, waiting for it to start');
+			this.#log('info', 'build queued, waiting for it to start');
 			return new Promise((resolve) =>
 				this.#events.once('build', () => {
-					this.#log('queued build complete');
+					this.#log('info', 'queued build complete');
 					this.next().then(resolve);
 				}),
 			);
 		} else {
-			this.#log('triggering build from idle');
+			this.#log('info', 'triggering build from idle');
 			return this.rebuild();
 		}
 	};
@@ -95,7 +95,7 @@ export class Rebuilder {
 	};
 
 	#invalidationRebuild = () => {
-		this.#log('debounce complete, rebuilding');
+		this.#log('info', 'debounce complete, rebuilding');
 		clearTimeout(this.#debounceTimeout!);
 		this.#debounceTimeout = null;
 		this.#nextResultPromise = this.rebuild().finally(() => {
@@ -111,11 +111,11 @@ export class Rebuilder {
 
 		if (currentInvalidation !== this.#invalidations) {
 			// another invalidation triggered while building. wait for the next build.
-			this.#log('build invalidated during generation, skipping result');
+			this.#log('info', 'build invalidated during generation, skipping result');
 			return this.next();
 		}
 
-		this.#log('build complete', 'tokens:', this.ctx.tokens.size);
+		this.#log('info', 'build complete', 'tokens:', this.ctx.tokens.size);
 		this.#lastBuildResult = { invalidations: currentInvalidation, result };
 		this.#events.emit('build', result);
 		return result;
