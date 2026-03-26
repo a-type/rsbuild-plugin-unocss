@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
 const portMap = new Map();
 
@@ -24,20 +24,19 @@ export async function expectAppliedStyles(
 		state: 'attached',
 		timeout: 10000,
 	});
-	expect(
-		await page.evaluate(
-			({ selector, styleKeys }) => {
-				const el = document.querySelector(selector);
-				if (!el) return null;
-				return styleKeys.reduce(
-					(acc, key) => {
-						acc[key] = getComputedStyle(el)[key];
-						return acc;
-					},
-					{} as Record<string, string>,
-				);
-			},
-			{ selector: elementSelector, styleKeys: Object.keys(styles) },
-		),
-	).toEqual(styles);
+
+	await page.waitForFunction(
+		({ selector, expected }) => {
+			const el = document.querySelector(selector);
+			if (!el) return null;
+			for (const [prop, value] of Object.entries(expected)) {
+				const computed = getComputedStyle(el)[prop as any];
+				if (computed !== value) {
+					return false;
+				}
+			}
+			return true;
+		},
+		{ selector: elementSelector, expected: styles },
+	);
 }
