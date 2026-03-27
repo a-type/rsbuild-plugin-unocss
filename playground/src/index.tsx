@@ -18,7 +18,7 @@ createRoot(container).render(
 			surface
 			border
 			items="start"
-			className="color-black md:(color-primary-ink bg-primary-wash) p-sm"
+			className="color-[pink] md:(bg-primary-wash) p-sm"
 		>
 			<h1 className={importedClass}>Rsbuild</h1>
 			<p className={jsClass}>{pascalCase('Start building amazing things.')}</p>

@@ -29,6 +29,9 @@ importers:
       '@jridgewell/remapping':
         specifier: ^2.3.5
         version: 2.3.5
+      '@rspack/core':
+        specifier: ^1.7.10
+        version: 1.7.10(@swc/helpers@0.5.19)
       '@unocss/config':
         specifier: ^66.6.7
         version: 66.6.7

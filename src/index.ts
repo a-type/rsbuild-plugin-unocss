@@ -1,5 +1,4 @@
 import { mkdirSync } from 'node:fs';
-import fs from 'node:fs/promises';
 import path from 'node:path';
 import {
 	mergeRsbuildConfig,
@@ -8,12 +7,12 @@ import {
 } from '@rsbuild/core';
 import type { GenerateResult, UserConfig } from '@unocss/core';
 import { type FSWatcher, watch } from 'chokidar';
-import { pluginVirtualModule } from 'rsbuild-plugin-virtual-module';
 import { IGNORE_COMMENT } from './integrationUtil/constants.js';
 import { setupContentExtractor } from './integrationUtil/content.js';
 import { createContext } from './integrationUtil/context.js';
 import { applyTransformers } from './integrationUtil/transformers.js';
 import { Rebuilder } from './Rebuilder.js';
+import rspack from '@rspack/core';
 
 export type PluginUnoCssOptions = {
 	config?: UserConfig<any> | string;
@@ -75,9 +74,6 @@ export type PluginUnoCssOptions = {
 		onCssResolved?: (result: GenerateResult<Set<string>>) => void;
 		onCssBuildBegan?: (tokenCount: number) => void;
 	};
-
-	/** don't use this. I'm testing something, will remove later. */
-	__do_not_use__disable_trigger_file?: boolean;
 };
 
 export const pluginUnoCss = (
@@ -95,16 +91,6 @@ export const pluginUnoCss = (
 		((filePath) => filePath.includes('node_modules'));
 
 	const virtualModulesDirName = '.uno-virtual-module';
-	const triggerFileName = 'uno.trigger';
-	// temporarily use a naive path resolved from cwd while
-	// we wait for plugin startup to provide a more reliable
-	// root.
-	let triggerFilePath = path.resolve(
-		process.cwd(),
-		'node_modules',
-		virtualModulesDirName,
-		triggerFileName,
-	);
 
 	const unoPlugin: RsbuildPlugin = {
 		name: 'plugin-unocss',
@@ -128,9 +114,6 @@ export const pluginUnoCss = (
 				'node_modules',
 				virtualModulesDirName,
 			);
-			// now we have api.context.rootPath; update our trigger file
-			// path
-			triggerFilePath = path.join(resolvedVirtualModulesDir, triggerFileName);
 			// ensure the virtual modules directory exists.
 			mkdirSync(resolvedVirtualModulesDir, { recursive: true });
 
@@ -152,15 +135,18 @@ export const pluginUnoCss = (
 				await contentExtractionPromise;
 			});
 
-			// when Uno invalidates, write a new unique value to the
-			// trigger file.
-			if (!options.__do_not_use__disable_trigger_file) {
-				ctx.onInvalidate(async () => {
-					log('debug', `UnoCSS invalidated (${ctx.tokens.size} tokens)`);
-					await fs.writeFile(triggerFilePath, `uno-nonce: ${ctx.tokens.size}`);
-					options.events?.onCssInvalidated?.(ctx.tokens.size);
+			const baseVirtualModulesPlugin =
+				new rspack.experiments.VirtualModulesPlugin({
+					'uno.css': '',
 				});
-			}
+
+			// when Uno invalidates, write the CSS to the virtual module
+			ctx.onInvalidate(async () => {
+				log('debug', `UnoCSS invalidated (${ctx.tokens.size} tokens)`);
+				options.events?.onCssInvalidated?.(ctx.tokens.size);
+				const result = await rebuilder.next();
+				baseVirtualModulesPlugin.writeModule('uno.css', result.css);
+			});
 
 			rebuilder.onBuild((result) => {
 				options.events?.onCssGenerated?.(result.css);
@@ -291,29 +277,13 @@ export const pluginUnoCss = (
 					watchConfig();
 				});
 			});
+
+			api.modifyRspackConfig((config) => {
+				config.plugins.push(baseVirtualModulesPlugin);
+				return config;
+			});
 		},
 	};
 
-	const unoVirtualModulesPlugin = pluginVirtualModule({
-		virtualModules: {
-			'uno.css': async ({ addDependency }) => {
-				options.logLevel && console.info('info    generating UnoCSS');
-				// explicitly depend on our 'trigger' file which
-				// invalidates our CSS programmatically when it is
-				// written.
-				if (!options.__do_not_use__disable_trigger_file) {
-					addDependency(triggerFilePath);
-				}
-				// next() will either trigger new build if no prior
-				// CSS exists, return the cached build, or wait until
-				// an in-progress build is complete.
-				const result = await rebuilder.next();
-				options.events?.onCssResolved?.(result);
-				return result.css;
-			},
-		},
-		tempDir: virtualModulesDirName,
-	});
-
-	return [unoVirtualModulesPlugin, unoPlugin];
+	return [unoPlugin];
 };
