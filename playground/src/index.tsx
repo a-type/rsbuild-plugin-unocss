@@ -17,13 +17,12 @@ createRoot(container).render(
 			col
 			surface
 			border
-			gap
 			items="start"
 			className="color-black md:(color-primary-ink bg-primary-wash) p-sm"
 		>
 			<h1 className={importedClass}>Rsbuild</h1>
 			<p className={jsClass}>{pascalCase('Start building amazing things.')}</p>
-			<Button className="m-[40px]">Library Component</Button>
+			<Button>Library Component</Button>
 			<ImportedComponent />
 		</Box>
 	</Provider>,

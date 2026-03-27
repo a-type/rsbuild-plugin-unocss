@@ -121,9 +121,12 @@ importers:
         specifier: 'catalog:'
         version: 19.1.1(react@19.1.1)
     devDependencies:
+      '@rsbuild/core':
+        specifier: ^1.7.3
+        version: 1.7.3
       '@rsbuild/plugin-react':
         specifier: 'catalog:'
-        version: 1.3.5(@rsbuild/core@2.0.0-beta.10(core-js@3.47.0))
+        version: 1.3.5(@rsbuild/core@1.7.3)
       tsx:
         specifier: ^4.20.4
         version: 4.20.4
@@ -2136,14 +2139,6 @@ snapshots:
   '@rsbuild/plugin-react@1.3.5(@rsbuild/core@1.7.3)':
     dependencies:
       '@rsbuild/core': 1.7.3
-      '@rspack/plugin-react-refresh': 1.4.3(react-refresh@0.17.0)
-      react-refresh: 0.17.0
-    transitivePeerDependencies:
-      - webpack-hot-middleware
-
-  '@rsbuild/plugin-react@1.3.5(@rsbuild/core@2.0.0-beta.10(core-js@3.47.0))':
-    dependencies:
-      '@rsbuild/core': 2.0.0-beta.10(core-js@3.47.0)
       '@rspack/plugin-react-refresh': 1.4.3(react-refresh@0.17.0)
       react-refresh: 0.17.0
     transitivePeerDependencies:
