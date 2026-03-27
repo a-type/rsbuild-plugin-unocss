@@ -79,6 +79,10 @@ export const pluginUnoCss = (
 	const virtualModuleId = 'node_modules/uno.css';
 	const ctx = createContext({ configOrPath: options.config });
 	const rebuilder = new Rebuilder(ctx, options);
+	let resolveFirstCompile!: () => void;
+	const firstCompilePromise = new Promise<void>((resolve) => {
+		resolveFirstCompile = resolve;
+	});
 
 	const cachedExtractions = new Set<string>();
 	const shouldCache =
@@ -140,11 +144,11 @@ export const pluginUnoCss = (
 			api.modifyRspackConfig((config) => {
 				config.plugins.push(baseVirtualModulesPlugin);
 
-				// this is just for one-time builds... ensures the CSS gets
-				// collected before the build is complete.
-				if (api.context.action === 'build') {
-					config.plugins.push({
-						apply(compiler) {
+				config.plugins.push({
+					apply(compiler) {
+						// this is just for one-time builds... ensures the CSS gets
+						// collected before the build is complete.
+						if (api.context.action === 'build') {
 							async function rebuild() {
 								const result = await rebuilder.next();
 								baseVirtualModulesPlugin.writeModule(
@@ -161,9 +165,15 @@ export const pluginUnoCss = (
 							compiler.hooks.make.tapPromise('UnoCSS', rebuild);
 							// without this one it seems the file doesn't get written?
 							compiler.hooks.afterCompile.tapPromise('UnoCSS', rebuild);
-						},
-					} satisfies rspack.RspackPluginInstance);
-				}
+						}
+
+						// resolve first build
+						compiler.hooks.thisCompilation.tap('UnoCSS', () => {
+							resolveFirstCompile();
+							log('debug', 'UnoCSS first compilation started');
+						});
+					},
+				} satisfies rspack.RspackPluginInstance);
 
 				config.watchOptions = {
 					...config.watchOptions,
@@ -180,7 +190,10 @@ export const pluginUnoCss = (
 			});
 
 			if (api.context.action === 'dev') {
-				rebuilder.onBuild((result) => {
+				rebuilder.onBuild(async (result) => {
+					// we must wait for the startup routine to initialize the Rust portion
+					// or else the virtual module write will fail...
+					await firstCompilePromise;
 					options.events?.onCssGenerated?.(result.css);
 					baseVirtualModulesPlugin.writeModule(virtualModuleId, result.css);
 					log('debug', 'UnoCSS build result written to virtual module');
