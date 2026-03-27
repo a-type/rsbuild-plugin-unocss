@@ -1,4 +1,4 @@
-import { type RsbuildPlugin, type TransformHandler } from '@rsbuild/core';
+import type { RsbuildPlugin, TransformHandler } from '@rsbuild/core';
 import rspack from '@rspack/core';
 import type { UserConfig } from '@unocss/core';
 import { type FSWatcher, watch } from 'chokidar';
@@ -101,7 +101,7 @@ export const pluginUnoCss = (
 				}
 			}
 			rebuilder.configure(log);
-			let cleanups: (() => void)[] = [];
+			const cleanups: (() => void)[] = [];
 
 			const emptyContent = 'body { --unocss-plugin-initializing: 1; }';
 			const baseVirtualModulesPlugin =
@@ -168,7 +168,7 @@ export const pluginUnoCss = (
 				config.watchOptions = {
 					...config.watchOptions,
 					// don't ignore watch on our virtual module
-					ignored: new RegExp(`[\\/](?:node_modules(?![\\/]uno\.css))[\\/]`),
+					ignored: /[\\/](?:node_modules(?![\\/]uno.css))[\\/]/,
 				};
 				return config;
 			});
