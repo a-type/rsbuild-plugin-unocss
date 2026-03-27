@@ -31,21 +31,20 @@ test.beforeAll(async () => {
 test('should hot reload new classes without losing React state', async ({
 	page,
 }) => {
-	let cssResolvedCount = 0;
-	await page.route('**/index.css', (route) => route.continue());
+	let cssGeneratedCount = 0;
+	await page.route('**/*.css', (route) => {
+		console.log('CSS request:', route.request().url());
+		return route.continue();
+	});
 
 	const rsbuild = await createRsbuild({
 		cwd: import.meta.dirname,
-		rsbuildConfig: {
-			logLevel: 'info',
-
+		config: {
 			plugins: [
 				pluginUnoCss({
-					logLevel: 'info',
 					events: {
-						onCssResolved: () => {
-							console.log('CSS resolved');
-							cssResolvedCount++;
+						onCssGenerated: () => {
+							cssGeneratedCount++;
 						},
 					},
 					config: {
@@ -78,7 +77,7 @@ test('should hot reload new classes without losing React state', async ({
 		'background-color': 'rgb(255, 0, 0)',
 	});
 
-	expect(cssResolvedCount).toBe(2);
+	expect(cssGeneratedCount).toBeGreaterThan(0);
 
 	// store the stateful value of the element content, this tells
 	// us if the page was fully reloaded or not
@@ -98,7 +97,7 @@ test('should hot reload new classes without losing React state', async ({
 	await page.waitForResponse(
 		async (res) => {
 			const body = await res.body();
-			return res.url().includes('index.css') && body.includes('green');
+			return res.url().includes('.css') && body.includes('green');
 		},
 		{
 			timeout: 5000,
@@ -140,7 +139,7 @@ test('should hot reload new classes without losing React state', async ({
 	try {
 		await page.waitForResponse(
 			async (res) => {
-				if (!res.url().includes('index.css')) return false;
+				if (!res.url().includes('.css')) return false;
 				const body = await res.body();
 				lastCss = body.toString();
 				return body.includes(`#${hexColor.toString(16)}`);

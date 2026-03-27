@@ -5,7 +5,6 @@ import { pluginUnoCss } from '../../src';
 import { expectAppliedStyles, getRandomPort } from '../helper';
 
 const basicPlugin = pluginUnoCss({
-	logLevel: 'info',
 	config: {
 		presets: [presetMini()],
 		transformers: [transformerVariantGroup()],
@@ -52,7 +51,7 @@ async function testProcedure(page: Page) {
 test('should render page as expected', async ({ page }) => {
 	const rsbuild = await createRsbuild({
 		cwd: import.meta.dirname,
-		rsbuildConfig: {
+		config: {
 			plugins: [basicPlugin],
 			server: {
 				port: getRandomPort(),
@@ -72,12 +71,13 @@ test('should render page as expected', async ({ page }) => {
 test('should build and succeed', async ({ page }) => {
 	const rsbuild = await createRsbuild({
 		cwd: import.meta.dirname,
-		rsbuildConfig: {
+		config: {
 			plugins: [basicPlugin],
 		},
 	});
 
-	await rsbuild.build();
+	const result = await rsbuild.build();
+	await result.close();
 	const { server, urls } = await rsbuild.preview({
 		getPortSilently: true,
 	});

@@ -5,11 +5,12 @@ import { pluginUnoCss } from '../../src';
 import { expectAppliedStyles, getRandomPort } from '../helper';
 
 const basicPlugin = pluginUnoCss({
+	logLevel: 'info',
 	config: {
 		presets: [presetMini()],
 		content: {
 			pipeline: {
-				include: [/\.(jsx|ts|tsx)($|\?)/],
+				include: [/\.(js|jsx|ts|tsx)($|\?)/],
 			},
 		},
 	},
@@ -18,7 +19,7 @@ const basicPlugin = pluginUnoCss({
 test('should render page as expected', async ({ page }) => {
 	const rsbuild = await createRsbuild({
 		cwd: import.meta.dirname,
-		rsbuildConfig: {
+		config: {
 			plugins: [basicPlugin],
 			server: {
 				port: getRandomPort(),
@@ -44,13 +45,11 @@ test('should build and succeed', async ({ page }) => {
 		cwd: import.meta.dirname,
 		rsbuildConfig: {
 			plugins: [basicPlugin],
-			server: {
-				port: getRandomPort(),
-			},
 		},
 	});
 
-	await rsbuild.build();
+	const result = await rsbuild.build();
+	await result.close();
 	const { server, urls } = await rsbuild.preview({
 		getPortSilently: true,
 	});

@@ -3,6 +3,7 @@ import type { GenerateResult, UnocssPluginContext } from '@unocss/core';
 
 export class Rebuilder {
 	#debounceTimeout: NodeJS.Timeout | null = null;
+	#debounceMs = 100;
 	#events = new EventEmitter<{
 		build: [GenerateResult<Set<string>>];
 		beginBuild: [number];
@@ -34,9 +35,13 @@ export class Rebuilder {
 		private options?: {
 			minify?: boolean;
 			debug?: boolean;
+			debounceMs?: number;
 		},
 	) {
-		ctx.onInvalidate(this.invalidate);
+		if (options?.debounceMs !== undefined) {
+			this.#debounceMs = options.debounceMs;
+		}
+		this.#events.setMaxListeners(1000); // .once usage in next() means peak count is = number of active invalidations, so bump this.
 	}
 
 	configure(log: (...args: any[]) => void) {
@@ -91,7 +96,10 @@ export class Rebuilder {
 		if (this.#debounceTimeout) {
 			clearTimeout(this.#debounceTimeout);
 		}
-		this.#debounceTimeout = setTimeout(this.#invalidationRebuild, 100);
+		this.#debounceTimeout = setTimeout(
+			this.#invalidationRebuild,
+			this.#debounceMs,
+		);
 	};
 
 	#invalidationRebuild = () => {

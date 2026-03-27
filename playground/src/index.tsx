@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 
 import 'uno.css';
 
-import './index.css';
+// import './index.css';
 import { ImportedComponent } from './ImportedComponent';
 import { importedClass } from './imported.js';
 import { jsClass } from './jsFile.js';
@@ -18,7 +18,7 @@ createRoot(container).render(
 			surface
 			border
 			items="start"
-			className="color-[pink] md:(bg-primary-wash) p-sm"
+			className="color-[#ff3] md:(bg-primary-wash) p-sm"
 		>
 			<h1 className={importedClass}>Rsbuild</h1>
 			<p className={jsClass}>{pascalCase('Start building amazing things.')}</p>
