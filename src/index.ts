@@ -71,6 +71,8 @@ export type PluginUnoCssOptions = {
 	 * Modify debounce timing for rebuilds. Default is 100ms.
 	 */
 	debounceMs?: number;
+
+	__experimental_speedy?: boolean;
 };
 
 export const pluginUnoCss = (
@@ -233,20 +235,14 @@ export const pluginUnoCss = (
 					} else {
 						log('debug', 'Not caching extracted CSS', resource);
 					}
-					// await extraction on source rebuild. we await here,
-					// rather than doing it out-of-band, to ensure we don't
-					// hit a race condition where uno.css is resolved and
-					// loaded before extraction of a new token is complete.
-					// If that happened, the class for the new token would
-					// not yet be available when the user loads the resource
-					// and it would have no applied styles until the next
-					// change.
-					// An opportunity exists here to think of a more efficient
-					// way to parallelize extraction and block uno.css loading
-					// until it's complete without stopping here, but until
-					// that's thought up, we prefer correctness.
-					await ctx.extract(final, resource);
-					log('debug', 'Finished extracting CSS from source', resource);
+					const extractionPromise = ctx.extract(final, resource).then(() => {
+						log('debug', 'Finished extracting CSS from source', resource);
+					});
+					// speedy mode skips waiting for extraction and trusts that the
+					// extraction -> invalidate -> rebuild -> deliver cycle works.
+					if (!options.__experimental_speedy) {
+						await extractionPromise;
+					}
 				} else {
 					log('debug', 'Skipping extraction for cached CSS', resource);
 				}
