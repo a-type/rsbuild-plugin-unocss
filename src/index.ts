@@ -251,7 +251,10 @@ export const pluginUnoCss = (
 							const tokenDifference = new Set(ctx.tokens);
 							beforeExtractTokens.forEach((t) => tokenDifference.delete(t));
 							beforeExtractTokens = new Set(ctx.tokens);
-							options.events.onCssExtracted(resource, Array.from(ctx.tokens));
+							options.events.onCssExtracted(
+								resource,
+								Array.from(tokenDifference),
+							);
 						}
 					});
 					// speedy mode skips waiting for extraction and trusts that the
