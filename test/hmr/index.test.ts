@@ -5,7 +5,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { presetMini } from 'unocss';
 import { pluginUnoCss } from '../../src';
-import { expectAppliedStyles, getRandomPort } from '../helper';
+import { expectAppliedStyles } from '../helper';
 
 const workdir = 'tmp';
 const workingFile = path.join(import.meta.dirname, workdir, 'Component.tsx');
@@ -42,9 +42,16 @@ test('should hot reload new classes without losing React state', async ({
 		config: {
 			plugins: [
 				pluginUnoCss({
+					logLevel: 'info',
 					events: {
-						onCssGenerated: () => {
+						onCssGenerated: (result) => {
 							cssGeneratedCount++;
+							console.log(
+								`CSS generated #${cssGeneratedCount}:`,
+								result.css?.slice(0, 100),
+								'...',
+								result.css?.slice(-100),
+							);
 						},
 					},
 					config: {
@@ -59,7 +66,7 @@ test('should hot reload new classes without losing React state', async ({
 				pluginReact(),
 			],
 			server: {
-				port: getRandomPort(),
+				port: 3033, // getRandomPort(),
 			},
 			source: {
 				entry: {

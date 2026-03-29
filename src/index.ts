@@ -1,6 +1,6 @@
 import type { RsbuildPlugin, TransformHandler } from '@rsbuild/core';
 import rspack from '@rspack/core';
-import type { UserConfig } from '@unocss/core';
+import type { GenerateResult, UserConfig } from '@unocss/core';
 import { type FSWatcher, watch } from 'chokidar';
 import { IGNORE_COMMENT } from './integrationUtil/constants.js';
 import { setupContentExtractor } from './integrationUtil/content.js';
@@ -64,7 +64,7 @@ export type PluginUnoCssOptions = {
 	 */
 	events?: {
 		onCssInvalidated?: (tokenCount: number) => void;
-		onCssGenerated?: (css: string) => void;
+		onCssGenerated?: (result: GenerateResult<Set<string>>) => void;
 		onCssBuildBegan?: (tokenCount: number) => void;
 		onCssExtracted?: (filePath: string, tokens: string[]) => void;
 	};
@@ -80,6 +80,7 @@ export const pluginUnoCss = (
 	options: PluginUnoCssOptions = {},
 ): RsbuildPlugin[] => {
 	const virtualModuleId = 'node_modules/uno.css';
+	const speedy = !!options.__experimental_speedy;
 	const ctx = createContext({ configOrPath: options.config });
 	const rebuilder = new Rebuilder(ctx, options);
 	let resolveFirstCompile!: () => void;
@@ -111,7 +112,11 @@ export const pluginUnoCss = (
 			rebuilder.configure(log);
 			const cleanups: (() => void)[] = [];
 
-			const emptyContent = 'body { --unocss-plugin-initializing: 1; }';
+			const emptyContent = `.uno_plugin_init_${Math.random().toString(36).substring(2, 8)}{--unocss-plugin-initializing:1;}`;
+			// must match the above irrespective of CSS formatting, including presence of non-essential semicolon,
+			// whitespace, newlines, etc.
+			const matchEmptyContent =
+				/\.uno_plugin_init_\w{6}\s*\{\s*--unocss-plugin-initializing:\s*1;?\s*\}/;
 			const baseVirtualModulesPlugin =
 				new rspack.experiments.VirtualModulesPlugin({
 					[virtualModuleId]: emptyContent,
@@ -151,30 +156,51 @@ export const pluginUnoCss = (
 				config.plugins.push({
 					apply(compiler) {
 						// this is just for one-time builds... ensures the CSS gets
-						// collected before the build is complete.
+						// collected and replaced before the build is complete.
+						// dev mode uses a more dynamic virtual module approach which
+						// doesn't block compilation and instead rewrites the virtual
+						// module after invalidation->build completes.
 						if (api.context.action === 'build') {
-							async function rebuild() {
-								const result = await rebuilder.next();
-								baseVirtualModulesPlugin.writeModule(
-									virtualModuleId,
-									result.css,
+							compiler.hooks.compilation.tap('UnoCSS', (compilation) => {
+								compilation.hooks.processAssets.tapPromise(
+									'UnoCSS',
+									async (assets) => {
+										await contentExtractionPromise;
+										const result = await rebuilder.next();
+										options.events?.onCssGenerated?.(result);
+										for (const assetName in assets) {
+											if (assetName.endsWith('.css')) {
+												const assetContent = assets[assetName]
+													.source()
+													.toString();
+												if (matchEmptyContent.test(assetContent)) {
+													const replacedContent = assetContent.replace(
+														matchEmptyContent,
+														result.css,
+													);
+													log(
+														'info',
+														'Injecting generated UnoCSS content',
+														assetName,
+													);
+													assets[assetName] =
+														new compiler.webpack.sources.SourceMapSource(
+															replacedContent,
+															assetName,
+															compilation.assets[assetName].map() as any,
+														);
+												}
+											}
+										}
+									},
 								);
-								options.events?.onCssGenerated?.(result.css);
-							}
-
-							// experimentally, these are both necessary, even though
-							// the second one only gets the precompiled/cached copy...
-
-							// this one is really meant to capture things, but...
-							compiler.hooks.make.tapPromise('UnoCSS', rebuild);
-							// without this one it seems the file doesn't get written?
-							compiler.hooks.afterCompile.tapPromise('UnoCSS', rebuild);
+							});
 						}
 
-						// resolve first build
+						// resolve first build - tells us Rust is ready so we can
+						// write to virtual filesystem.
 						compiler.hooks.thisCompilation.tap('UnoCSS', () => {
 							resolveFirstCompile();
-							log('debug', 'UnoCSS first compilation started');
 						});
 					},
 				} satisfies rspack.RspackPluginInstance);
@@ -198,9 +224,12 @@ export const pluginUnoCss = (
 					// we must wait for the startup routine to initialize the Rust portion
 					// or else the virtual module write will fail...
 					await firstCompilePromise;
-					options.events?.onCssGenerated?.(result.css);
-					baseVirtualModulesPlugin.writeModule(virtualModuleId, result.css);
-					log('debug', 'UnoCSS build result written to virtual module');
+					baseVirtualModulesPlugin.writeModule(
+						virtualModuleId,
+						result.css || emptyContent,
+					);
+					options.events?.onCssGenerated?.(result);
+					log('info', 'UnoCSS build emitted');
 				});
 			}
 			rebuilder.onBeginBuild((tokenCount) =>
@@ -257,9 +286,9 @@ export const pluginUnoCss = (
 							);
 						}
 					});
-					// speedy mode skips waiting for extraction and trusts that the
+					// speedy mode during dev skips waiting for extraction and trusts that the
 					// extraction -> invalidate -> rebuild -> deliver cycle works.
-					if (!options.__experimental_speedy) {
+					if (api.context.action === 'build' || !speedy) {
 						await extractionPromise;
 					}
 				} else {

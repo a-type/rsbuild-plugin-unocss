@@ -33,6 +33,7 @@
 		"pre-commit": "pnpm lint:write"
 	},
 	"devDependencies": {
+		"@a-type/ui": "catalog:",
 		"@biomejs/biome": "^2.1.1",
 		"@playwright/test": "^1.53.2",
 		"@rsbuild/core": "^1.7.4",

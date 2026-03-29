@@ -2,8 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
 	testDir: './test',
-	timeout: 30000,
-	retries: 0,
+	timeout: 10000,
+	retries: 2,
 	use: {
 		trace: 'on-first-retry',
 		headless: true,

@@ -4,4 +4,4 @@ neverRendered.textContent = 'never rendered';
 document.body.appendChild(neverRendered);
 
 // this class is picked up and put in the bundle, though.
-export const filesystemClass = 'absolute';
+export const filesystemClass = '[&#created]:absolute';

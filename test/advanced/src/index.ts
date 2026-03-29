@@ -1,12 +1,22 @@
 import 'uno.css';
+import './extraCss.css';
+
 import { ignoredClass } from './ignored';
 import { importedClass } from './imported';
 
-const div = document.createElement('div');
-div.id = 'test-element';
-div.classList.add('bg-[red]');
-div.className = `bg-[red] focus:(bg-[blue] m-[8px]) ${importedClass}`;
-div.classList.add(ignoredClass);
-div.textContent = 'hello world';
-div.tabIndex = 0;
-document.body.appendChild(div);
+import { H2 } from '@a-type/ui';
+
+const testEl = document.createElement('button');
+testEl.id = 'test-element';
+testEl.classList.add('bg-[red]');
+testEl.className = `bg-[red] focus:(bg-[blue] m-[8px]) ${importedClass}`;
+// because the ignoredClass may be unintentionally included in the
+// @a-type/ui library and compiled anyway, it includes a unique selector
+// that uses this class.
+testEl.classList.add('uniqueToThisTest');
+testEl.classList.add(ignoredClass);
+testEl.textContent = 'hello world';
+document.getElementById('root')!.appendChild(testEl);
+
+// just for usage's sake...
+H2.displayName;

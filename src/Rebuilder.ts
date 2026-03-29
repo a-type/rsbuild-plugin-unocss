@@ -14,6 +14,7 @@ export class Rebuilder {
 		invalidations: number;
 		result: GenerateResult<Set<string>>;
 	} | null = null;
+	readonly firstBuildPromise: Promise<void>;
 	#log: (level: 'info' | 'debug', ...args: any[]) => void = () => {};
 
 	get #buildQueued() {
@@ -42,6 +43,12 @@ export class Rebuilder {
 			this.#debounceMs = options.debounceMs;
 		}
 		this.#events.setMaxListeners(1000); // .once usage in next() means peak count is = number of active invalidations, so bump this.
+		this.firstBuildPromise = new Promise<void>((resolve) => {
+			this.#events.once('build', () => {
+				this.#log('info', 'first build complete');
+				resolve();
+			});
+		});
 	}
 
 	configure(log: (...args: any[]) => void) {
@@ -96,10 +103,23 @@ export class Rebuilder {
 		if (this.#debounceTimeout) {
 			clearTimeout(this.#debounceTimeout);
 		}
-		this.#debounceTimeout = setTimeout(
-			this.#invalidationRebuild,
-			this.#debounceMs,
-		);
+
+		if (this.#invalidations === 1) {
+			// for the first build, skip debouncing -
+			// note: this is not just convenience, it seems that if the first
+			// build is delayed beyond the rsbuild dev server's build, the loaded
+			// content won't be updated when it completes... this may indicate some
+			// deeper issue...
+			this.#log('debug', 'first invalidation, rebuilding immediately');
+			this.#nextResultPromise = this.rebuild().finally(() => {
+				this.#nextResultPromise = null;
+			});
+		} else {
+			this.#debounceTimeout = setTimeout(
+				this.#invalidationRebuild,
+				this.#debounceMs,
+			);
+		}
 	};
 
 	#invalidationRebuild = () => {

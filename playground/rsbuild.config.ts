@@ -20,14 +20,9 @@ export default defineConfig({
 				onCssBuildBegan: (tokenCount) => {
 					console.log(`CSS build started with ${tokenCount} tokens`);
 				},
-				onCssGenerated: (css) => {
+				onCssGenerated: ({ css }) => {
 					console.log(
 						`CSS generated ${css.slice(0, 100)}...${css.slice(css.length - 100)}`,
-					);
-				},
-				onCssResolved: (result) => {
-					console.log(
-						`CSS resolved with ${result.matched.size} matched tokens`,
 					);
 				},
 			},

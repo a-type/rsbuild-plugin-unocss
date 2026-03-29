@@ -7,6 +7,7 @@ onlyBuiltDependencies:
   - simple-git-hooks
 
 catalog:
+  '@a-type/ui': ^5.0.19
   react: 19.1.1
   react-dom: 19.1.1
   '@types/react': 19.1.11

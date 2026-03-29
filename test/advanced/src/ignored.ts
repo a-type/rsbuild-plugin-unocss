@@ -1,2 +1,2 @@
 // @unocss-ignore
-export const ignoredClass = 'hidden';
+export const ignoredClass = '[&.uniqueToThisTest]:hidden';
