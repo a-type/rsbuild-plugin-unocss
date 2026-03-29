@@ -66,6 +66,7 @@ export type PluginUnoCssOptions = {
 		onCssInvalidated?: (tokenCount: number) => void;
 		onCssGenerated?: (css: string) => void;
 		onCssBuildBegan?: (tokenCount: number) => void;
+		onCssExtracted?: (filePath: string, tokens: string[]) => void;
 	};
 	/**
 	 * Modify debounce timing for rebuilds. Default is 100ms.
@@ -98,10 +99,11 @@ export const pluginUnoCss = (
 		name: 'plugin-unocss',
 
 		setup(api) {
-			function log(level: 'info' | 'debug', ...args: any[]) {
+			function log(level: 'info' | 'debug' | 'warn', ...args: any[]) {
 				if (
 					options.logLevel === 'debug' ||
-					(options.logLevel === 'info' && level === 'info')
+					(options.logLevel === 'info' && level === 'info') ||
+					level === 'warn'
 				) {
 					api.logger.info('[UnoCSS]', Date.now(), ...args);
 				}
@@ -205,6 +207,14 @@ export const pluginUnoCss = (
 				options.events?.onCssBuildBegan?.(tokenCount),
 			);
 
+			let beforeExtractTokens = new Set<string>();
+			if (options.events?.onCssExtracted) {
+				log(
+					'warn',
+					'onCssExtracted event listener was provided - this can negatively impact build performance',
+				);
+			}
+
 			const transformAndExtractSource: TransformHandler = async ({
 				code,
 				resource,
@@ -237,6 +247,12 @@ export const pluginUnoCss = (
 					}
 					const extractionPromise = ctx.extract(final, resource).then(() => {
 						log('debug', 'Finished extracting CSS from source', resource);
+						if (options.events?.onCssExtracted) {
+							const tokenDifference = new Set(ctx.tokens);
+							beforeExtractTokens.forEach((t) => tokenDifference.delete(t));
+							beforeExtractTokens = new Set(ctx.tokens);
+							options.events.onCssExtracted(resource, Array.from(ctx.tokens));
+						}
 					});
 					// speedy mode skips waiting for extraction and trusts that the
 					// extraction -> invalidate -> rebuild -> deliver cycle works.
