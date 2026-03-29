@@ -1,10 +1,9 @@
 import 'uno.css';
 import './extraCss.css';
 
+import { H2 } from '@a-type/ui';
 import { ignoredClass } from './ignored';
 import { importedClass } from './imported';
-
-import { H2 } from '@a-type/ui';
 
 const testEl = document.createElement('button');
 testEl.id = 'test-element';

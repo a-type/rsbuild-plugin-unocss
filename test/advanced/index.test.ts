@@ -1,12 +1,12 @@
+import { readdir, readFile } from 'node:fs/promises';
+import path from 'node:path';
+import presetAtype from '@a-type/ui/uno-preset';
 import { expect, type Page, test } from '@playwright/test';
 import { createRsbuild } from '@rsbuild/core';
-import { pluginUnoCss } from '../../src';
-import { expectAppliedStyles, getRandomPort } from '../helper';
-import path from 'node:path';
-import { readdir, readFile } from 'node:fs/promises';
-import presetAtype from '@a-type/ui/uno-preset';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { transformerVariantGroup } from 'unocss';
+import { pluginUnoCss } from '../../src';
+import { expectAppliedStyles, getRandomPort } from '../helper';
 
 async function testProcedure(page: Page) {
 	await expectAppliedStyles(page, '#test-element', {
